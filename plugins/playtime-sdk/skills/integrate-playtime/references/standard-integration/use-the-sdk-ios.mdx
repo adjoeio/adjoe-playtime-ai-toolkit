@@ -1,0 +1,209 @@
+This guide covers the complete Catalog integration flow for displaying the Playtime catalog in your app.
+
+<AiToolkit />
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Verify the SDK is installed correctly:
+
+```swift
+import PlaytimeSDK
+```
+
+If the import resolves without errors, proceed with initialization.
+
+<InitializationBehavior />
+
+```swift
+import PlaytimeSDK
+
+let options = InitOptions(
+    sdkHash: "YOUR_SDK_HASH",
+    userId: "user_123"
+)
+
+do {
+    try await Playtime.initPlaytime(options: options)
+    // SDK is ready
+} catch let error as PlaytimeException {
+    // Handle error
+} catch {
+    // Any other error
+}
+```
+
+### InitOptions Parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Check SDK Status
+
+Before showing the catalog, check `getStatus()` to verify campaign availability.
+
+```swift
+do {
+    let status = try await Playtime.getStatus()
+
+    if status.isInitialized && status.details.campaignsAvailable {
+        // Safe to show catalog
+    }
+} catch let error as PlaytimeException {
+    // Handle error
+} catch {
+    // Any other error
+}
+```
+
+<StatusExplanation />
+
+</Step>
+<Step>
+
+## Record the Placement Impression
+
+Call `executeImpressionEvent` every time the button or placement that opens the catalog becomes visible. Await it before `showCatalog` so the local impression record is available before the catalog checks it. Analytics delivery remains fire-and-forget, so this does not add network delay.
+
+This required step records how many users see the catalog entry point so you can measure conversion from placement views to catalog opens. Pass the predefined `CatalogPlacement` that describes the entry point, or use `.custom("value")` when none applies.
+
+```swift
+try await Playtime.executeImpressionEvent(catalogPlacement: .navbar)
+```
+
+The method returns after recording the impression locally and does not wait for analytics delivery. `showCatalog` fails if `executeImpressionEvent` has not been called within the previous 30 minutes. The placement passed here and the placement in `CatalogOptions` are independent and do not need to match.
+
+</Step>
+<Step>
+
+## Show the Catalog
+
+`showCatalog` displays the adjoe offerwall UI. It accepts optional `CatalogOptions` for placement and category filtering.
+
+:::info[userId Required]
+`userId` must be set in `InitOptions` before calling `showCatalog`. If you initialize at app start without a userId (e.g., before login), you must call `initPlaytime` again with the userId once it's available.
+:::
+
+```swift
+let catalogOptions = CatalogOptions(
+    placement: .navbar
+)
+
+do {
+    try await Playtime.showCatalog(catalogOptions: catalogOptions)
+} catch let error as PlaytimeException {
+    // Handle error
+} catch {
+    // Any other error
+}
+```
+
+### CatalogOptions Parameters
+
+<CatalogOptionsTable />
+
+</Step>
+<Step>
+
+## Handle Errors
+
+All SDK methods throw `PlaytimeException`. Use `isRetryable` to decide whether to retry.
+
+```swift
+do {
+    try await Playtime.showCatalog(catalogOptions: catalogOptions)
+} catch let error as PlaytimeException {
+    let code = error.code           // e.g., "NetworkError.failed"
+    let type = error.errorType      // e.g., .network
+    let retryable = error.isRetryable
+    let message = error.message
+
+    switch error.errorType {
+    case .network:        break // Retry after delay
+    case .networkVPN:     break // Ask user to disable VPN
+    case .api:            break // Server error, retry later
+    case .sdkConfig:      break // Check your InitOptions
+    case .responseFormat: break // Report to adjoe
+    case .unknown:        break // Unexpected error
+    }
+} catch {
+    // Any other error
+}
+```
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+```swift
+try await Playtime.teardown()
+```
+
+<TeardownNote />
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+## Complete Example
+
+```swift
+import PlaytimeSDK
+
+// 1. Initialize
+let options = InitOptions(
+    sdkHash: "YOUR_SDK_HASH",
+    userId: "user_123"
+)
+
+do {
+    try await Playtime.initPlaytime(options: options)
+
+    // 2. Check status
+    let status = try await Playtime.getStatus()
+
+    if status.details.campaignsAvailable {
+        // 3. Record the impression when the catalog entry point becomes visible
+        try await Playtime.executeImpressionEvent(catalogPlacement: .navbar)
+
+        // 4. The local record is ready; analytics delivery remains asynchronous
+        try await Playtime.showCatalog(
+            catalogOptions: CatalogOptions(placement: .navbar)
+        )
+    }
+} catch let error as PlaytimeException {
+    // Handle error
+    print("Error: \(error.message), retryable: \(error.isRetryable)")
+} catch {
+    // Any other error
+}
+
+// 5. Teardown (e.g., on logout)
+try await Playtime.teardown()
+```
+
+## API Reference
+
+Full method signatures and type documentation:
+
+- [iOS SDK Reference](https://playtime-api-reference.adjoe.io/monetize/ios/5.0.0-beta.4/index.html)
+
+## Verification Checklist
+
+1. Wait for initialization before calling another SDK method.
+2. Confirm status reports that campaigns are available.
+3. Record the placement impression whenever the entry point becomes visible.
+4. Open the catalog only after the local impression succeeds.
+5. Handle structured errors and retry only retryable failures.
+6. Test initialization, status, impression recording, catalog presentation, and teardown on a physical device.

@@ -1,0 +1,256 @@
+Follow this guide to migrate your Studio integration from v4 to v5.
+
+## What's changing
+
+v5 makes initialization explicit, replaces the shared `PlaytimeOptions` and
+`PlaytimeParams` with purpose-specific options, and gives Studio methods clearer names.
+It also adds required TOS consent and structured error handling.
+
+The main integration rule is: wait for `initPlaytime` to complete successfully before
+calling any other SDK or Studio method.
+
+## What you need to update
+
+### 1. Update the dependency
+
+The Maven artifact name remains unchanged. Update the version in your `build.gradle.kts`:
+
+```kotlin
+// v4
+implementation("io.adjoe:adjoe-sdk-android:4.x.x")
+
+// v5
+implementation("io.adjoe:adjoe-sdk-android:5.0.0")
+```
+
+### 2. Replace implicit initialization
+
+Initialize Playtime as early as possible in the app lifecycle and wait for initialization to complete successfully before calling any other SDK method. Prefer `Application.onCreate` on Android, app launch on iOS, and app startup in React Native.
+
+`setPlaytimeOptions` becomes `initPlaytime`, and initialization fields now belong in
+`InitOptions`.
+
+**Before (v4):**
+
+```kotlin
+val options = PlaytimeOptions.Builder(context, "YOUR_SDK_HASH")
+    .setUserId("user123")
+    .build()
+
+Playtime.setPlaytimeOptions(options, listener)
+```
+
+**After (v5):**
+
+```kotlin
+Playtime.initPlaytime(
+    InitOptions(sdkHash = "YOUR_SDK_HASH", userId = "user123", country = "DE"),
+    listener
+)
+```
+
+At app start, v5 waits five seconds and then sends a lightweight session-start event for
+reporting. The event contains no personal user data, identifies only an anonymous user,
+and does not initialize or create a Playtime user.
+
+`country` is an optional ISO 3166-1 alpha-2 code used to map a user to their reward
+currency. Set it only when your integration supports multiple currencies, and set it only
+once per user because the backend does not accept replacements. Invalid non-empty values
+cause initialization to fail.
+
+If you disabled SDK warm-up or auto-initialization in v4, v5 ignores the old
+`io.adjoe.Playtime.AUTO_INIT_ENABLED` manifest entry. Remove it from `AndroidManifest.xml`
+anyway so your configuration no longer suggests that it controls v5 behavior.
+
+### 3. Split initialization options from campaign options
+
+In v4, `PlaytimeOptions` combined initialization and request settings, while
+`PlaytimeParams` carried fields such as placement and promotion tag. In v5:
+
+- `InitOptions` configures the SDK and user during `initPlaytime`.
+- `CampaignOptions` configures each available-campaign or offer-details request.
+- `InstalledCampaignOptions` configures installed-campaign requests.
+
+**Before (v4):**
+
+```kotlin
+val params = PlaytimeParams.Builder()
+    .setPlacement("navbar")
+    .setPromotionTag("summer-promotion")
+    .build()
+
+val options = PlaytimeOptions.Builder(context, "YOUR_SDK_HASH")
+    .setUserId("user123")
+    .setParams(params)
+    .build()
+
+PlaytimeStudio.getCampaigns(context, options, listener)
+```
+
+**After (v5):**
+
+```kotlin
+Playtime.initPlaytime(
+    InitOptions(sdkHash = "YOUR_SDK_HASH", userId = "user123"),
+    initListener
+)
+
+val campaignOptions = CampaignOptions(
+    placement = StudioPlacement.Navbar,
+    category = AppCategory.GAMING,
+    promotionTag = "summer-promotion"
+)
+
+PlaytimeStudio.getCampaigns(campaignOptions, listener)
+```
+
+Do not pass `PlaytimeOptions` to campaign calls in v5. `PlaytimeOptions` represented the
+SDK's overall initialization state; `CampaignOptions` represents only how one Studio
+campaign request should be filtered and presented.
+
+UA fields move to `InitOptions`. Each field independently records its first non-null value
+and cannot later be cleared or changed. To change mutable, non-UA initialization values,
+call `initPlaytime` explicitly again and wait for successful completion.
+
+### 4. Update renamed methods
+
+These APIs keep their purpose but use clearer v5 names:
+
+| Prior use                                      | v4                                                               | v5                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| Record an SDK campaign impression              | `executeEngagement(context, campaign, engagementType, listener)` | `executeCampaignImpression(campaign, impressionType, listener)` |
+| Record a token-based Offer API impression      | `executeEngagement(context, appID, token, listener)`             | `executeOfferImpression(token, appID, listener)`                |
+| Open the SDK campaign-managed details deeplink | `showAppDetails(activity, campaign, listener)`                   | `showCampaignDetails(activity, campaign, listener)`             |
+| Open the Offer API-managed details deeplink    | `showAppDetails(activity, appId, token, listener)`               | `showOfferDetails(activity, token, appID, listener)`            |
+| Open the installed-campaigns view              | `showInstalledApps(activity, listener)`                          | `showInstalledCampaigns(activity, listener)`                    |
+
+```kotlin
+// v4
+PlaytimeStudio.executeEngagement(context, campaign, EngagementType.DEFAULT, listener)
+
+// v5
+PlaytimeStudio.executeCampaignImpression(
+    campaign,
+    PlaytimeImpressionType.DEFAULT,
+    listener
+)
+```
+
+The token-based campaign lookup specifically changed from
+`getCampaigns(context, tokens, options, listener)` to
+`getOfferDetails(tokens, campaignOptions, listener)`. This is a rename of the SDK method
+that resolves Offer API tokens, not a broad change to the Offer API.
+
+`PlaytimeExecuteEngagementListener` is now `PlaytimeExecuteImpressionListener`, and
+`EngagementType` is now `PlaytimeImpressionType`.
+
+### 5. Change view tracking from 50% to full visibility
+
+:::warning[Update impression tracking for v5]
+
+- **Card visibility:** In v4, send the view when at least 50% of the campaign card is
+  visible. When migrating to v5, update your visibility check to send the view only when
+  100% of the campaign card is visible in the viewport.
+- **Before installation:** Send `executeCampaignImpression` with `DEFAULT` for an SDK
+  campaign, or `executeOfferImpression` for an Offer API item, before `openInStore`.
+  `ENGAGED` does not satisfy this requirement, and `openInStore` can fail without the
+  qualifying view.
+- **Custom details:** Send `ENGAGED` when the user opens publisher-built campaign details.
+  No dashboard configuration is required.
+
+:::
+
+### 6. Add TOS consent handling
+
+<StudioTosConsent />
+
+```kotlin
+PlaytimeStudio.updateTosConsent(TosConsentAction.ACCEPT, object : PlaytimeTosListener {
+    override fun onUpdated() { /* consent recorded */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+
+// Call this if the user later withdraws consent.
+PlaytimeStudio.updateTosConsent(TosConsentAction.WITHDRAW, tosListener)
+```
+
+### 7. Update error handling
+
+All errors are now `PlaytimeException` with structured fields: `code`, `errorType`,
+`isRetryable`, and `message`.
+
+```kotlin
+PlaytimeStudio.getCampaigns(campaignOptions, object : PlaytimeCampaignsListener {
+    override fun onReceived(response: PlaytimeCampaignsResponse) { /* render campaigns */ }
+
+    override fun onError(exception: PlaytimeException) {
+        Log.e("Playtime", "Code: ${exception.code}")
+        Log.e("Playtime", "Type: ${exception.errorType}")
+
+        if (exception.isRetryable) {
+            // Safe to retry
+        }
+    }
+})
+```
+
+### 8. Remove obsolete APIs and configuration
+
+The following are removals rather than renames:
+
+| Removed API/configuration                                                                                       | Prior use or reason                        | v5 replacement                                                                                 |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `PlaytimeOptions`                                                                                               | Held initialization and per-request values | Split values between `InitOptions`, `CampaignOptions`, and `InstalledCampaignOptions`          |
+| `PlaytimeParams`                                                                                                | Held UA, placement, and promotion values   | Move UA fields to `InitOptions`; use typed placement and promotion fields in `CampaignOptions` |
+| `PlaytimeStudio.getPermissions()`                                                                               | Read TOS and usage-permission state        | Read `Playtime.getStatus().isTosAccepted` and `.isUsagePermissionAccepted`                     |
+| `context` on most Studio methods                                                                                | Supplied Android context for each call     | No argument; v5 stores context internally after initialization                                 |
+| v4 dashboard flags for view tracking, install validation, engaged clicks, pending installs, and inline installs | Enabled these Studio behaviors             | No replacement; these behaviors are available by default                                       |
+
+Reward notifications are disabled by default in v5. Contact your Technical Account
+Manager (TAM) if you want them enabled.
+
+Inline installs no longer require dashboard configuration. Request the in-app Play Store
+sheet directly:
+
+```kotlin
+PlaytimeStudio.openInStore(
+    campaign,
+    useInlineInstall = true,
+    listener
+)
+```
+
+## Migration checklist
+
+1. Update the SDK dependency to `5.0.0`.
+2. Replace `setPlaytimeOptions` with `initPlaytime` and wait for completion.
+3. Split v4 `PlaytimeOptions` and `PlaytimeParams` values between `InitOptions`, `CampaignOptions`, and `InstalledCampaignOptions`.
+4. Remove the ignored v4 auto-init manifest entry if present.
+5. Update the renamed impression, details, installed-campaign, and token lookup methods.
+6. Add TOS acceptance and withdrawal handling.
+7. Change the view threshold from 50% to 100% card visibility, and send the required `DEFAULT` or offer impression before `openInStore`.
+8. Send `ENGAGED` when the user opens publisher-built custom details.
+9. Update handling to structured `PlaytimeException` values.
+10. Build and test campaign fetch, details, install, and installed-campaign flows.
+
+## Need help?
+
+- [API Reference](../api-reference.md) - full v5 method signatures and types
+- [Studio Changelog](./changelog.mdx) - complete list of Studio changes
+- Contact your Account Manager for migration support
+
+## Complete option migration reference
+
+<V5OptionMigration />
+
+### InitOptions
+
+<InitOptionsTable />
+
+### CampaignOptions and InstalledCampaignOptions
+
+<CampaignOptionsTable />
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />

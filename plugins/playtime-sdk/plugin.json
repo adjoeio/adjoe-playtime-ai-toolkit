@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "adjoe-playtime-sdk",
+  "version": "0.2.1",
+  "description": "Guidance for integrating the adjoe Playtime SDK.",
+  "author": {
+    "name": "adjoe"
+  },
+  "repository": "https://github.com/adjoeio/adjoe-playtime-ai-toolkit",
+  "license": "UNLICENSED",
+  "keywords": [
+    "adjoe",
+    "playtime",
+    "sdk",
+    "ios",
+    "android",
+    "mobile"
+  ]
+}

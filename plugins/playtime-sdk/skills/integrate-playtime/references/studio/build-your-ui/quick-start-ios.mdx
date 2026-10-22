@@ -1,0 +1,347 @@
+Quick-Start Custom UI lets you render native campaign placements while adjoe handles campaign
+details and the installed-campaigns view. Campaigns are ranked by eCPM; preserve the order
+returned by the SDK or Offer API.
+
+<AiToolkit />
+
+:::danger[Premium Feature]
+Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+Contact your AM to enable Studio and obtain your iOS SDK hash.
+:::
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+<InitializationBehavior />
+
+```swift
+import PlaytimeSDK
+
+do {
+    try await Playtime.initPlaytime(
+        options: InitOptions(
+            sdkHash: "YOUR_SDK_HASH",
+            userId: "user_123"
+        )
+    )
+} catch let error as PlaytimeException {
+    // Present or log the initialization error.
+} catch {
+    // Any other error
+}
+```
+
+### InitOptions parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Manage TOS Consent
+
+<StudioTosConsent />
+
+```swift
+try await PlaytimeStudio.updateTosConsent(action: .accept)
+// Later, if needed:
+try await PlaytimeStudio.updateTosConsent(action: .withdraw)
+```
+
+</Step>
+<Step>
+
+## Fetch SDK Campaigns
+
+Build campaign cards from [SDK Models](./sdk-models.md). For a full publisher-built experience,
+see the [Advanced Custom UI Visual Guide](./custom-ui/visual-guide.md). Preserve the returned
+order and pass unmodified campaign objects to later SDK calls.
+
+Check SDK status, fetch campaigns, and configure the default impression immediately after
+retrieval. Send it when the entire card is visible in the viewport; the SDK handles deduplication.
+
+```swift
+let status = try await Playtime.getStatus()
+guard status.details.campaignsAvailable else {
+    // Use campaignsState to decide which unavailable state to show.
+    return
+}
+
+let response = try await PlaytimeStudio.getCampaigns(
+    campaignOptions: CampaignOptions(
+        placement: .navbar,
+        category: .gaming,
+        displayFormat: .carousel
+    )
+)
+let campaigns = response.campaigns
+
+// Call this only after geometry measurement shows 100% visibility.
+guard let campaign = campaigns.first else { return }
+try await PlaytimeStudio.executeCampaignImpression(
+    campaign: campaign,
+    impressionType: .default
+)
+```
+
+Measure each card and the scroll-view viewport with `GeometryReader`, calculate their
+intersection area, and send the impression only after the entire card is visible.
+
+### Render SDK campaign cards
+
+:::note
+The SwiftUI samples on this page use `AsyncImage` (iOS 15) and `foregroundStyle` (iOS 17),
+while the SDK supports iOS 14. For older deployment targets, use your own image loader and
+`foregroundColor`.
+:::
+
+```swift
+import SwiftUI
+
+struct GameCardView: View {
+    let campaign: PlaytimeCampaign
+
+    private var hasPromotion: Bool {
+        guard let total = campaign.eventConfig?.totalCoinsPossible,
+              let original = campaign.eventConfig?.totalOriginalCoinsPossible else {
+            return false
+        }
+        return total > original
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: URL(string: campaign.iconImage ?? "")) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.3)
+            }
+            .frame(width: 160, height: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            if let total = campaign.eventConfig?.totalCoinsPossible {
+                HStack(spacing: 4) {
+                    if hasPromotion,
+                       let original = campaign.eventConfig?.totalOriginalCoinsPossible {
+                        Text("\(original)").strikethrough().foregroundStyle(.secondary)
+                    }
+                    Text("Up to \(total) Points")
+                }
+                .font(.caption)
+            }
+
+            Text(campaign.appName)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(2)
+        }
+        .frame(width: 160)
+        .onTapGesture {
+            Task {
+                try? await PlaytimeStudio.showCampaignDetails(campaign: campaign)
+            }
+        }
+    }
+}
+```
+
+`showCampaignDetails` opens the managed details flow and sends the engaged impression
+automatically. Do not send a duplicate engaged impression.
+
+### CampaignOptions and InstalledCampaignOptions
+
+<CampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Fetch Offer API Campaigns
+
+Fetch and rank campaigns on your backend. Retain each offer's token and app ID when enriching
+it with `getOfferDetails`; those identifiers are required for both the qualifying impression
+and managed details flow. An SDK status check is not required for this retrieval path because
+the API handles eligibility.
+
+```swift
+import SwiftUI
+
+// Model decoded from your backend's Offer API response.
+struct OfferAPIItem: Identifiable {
+    let id = UUID()
+    let appID: String
+    let appName: String
+    let coins: Int
+    let iconURL: String
+    let token: String
+}
+
+struct EnrichedOffer: Identifiable {
+    let offer: OfferAPIItem
+    let campaign: PlaytimeCampaign
+
+    var id: UUID { offer.id }
+}
+
+let offers: [OfferAPIItem] = fetchRankedOffersFromBackend()
+let response = try await PlaytimeStudio.getOfferDetails(
+    tokens: offers.map { $0.token },
+    campaignOptions: CampaignOptions(
+        placement: .navbar,
+        displayFormat: .carousel
+    )
+)
+// Match by token: the response can omit or reorder offers.
+let offersByToken = Dictionary(offers.map { ($0.token, $0) }, uniquingKeysWith: { first, _ in first })
+let enrichedOffers = response.campaigns.compactMap { campaign in
+    offersByToken[campaign.token].map { offer in
+        EnrichedOffer(offer: offer, campaign: campaign)
+    }
+}
+
+struct OfferCardView: View {
+    let item: EnrichedOffer
+
+    private var offer: OfferAPIItem { item.offer }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: URL(string: item.campaign.iconImage ?? offer.iconURL)) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Color.gray.opacity(0.3)
+            }
+            .frame(width: 160, height: 160)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            if let total = item.campaign.eventConfig?.totalCoinsPossible {
+                Text("Up to \(total) Points")
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+
+            Text(item.campaign.appName)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(2)
+        }
+        .frame(width: 160)
+        .onTapGesture {
+            Task {
+                try? await PlaytimeStudio.showOfferDetails(
+                    token: offer.token,
+                    appID: offer.appID
+                )
+            }
+        }
+    }
+}
+```
+
+Use the containing scroll view's geometry to require full card visibility. At that threshold, call
+`executeOfferImpression(token: offer.token, appID: offer.appID)` once. Do not substitute
+`executeCampaignImpression` merely because `item.campaign` contains enriched display data.
+
+`showOfferDetails` sends the engaged impression automatically. Do not send a duplicate
+engaged impression. See the [Offer API](./offer-api.mdx) for request and response details.
+
+</Step>
+<Step>
+
+## Show Installed Campaigns
+
+Fetch installed campaigns when you need their SDK models for an indicator, count, or preview.
+Open adjoe's managed installed-campaigns view when users want to return to active games and
+review their reward progress.
+
+```swift
+import SwiftUI
+
+let response = try await PlaytimeStudio.getInstalledCampaigns(
+    options: InstalledCampaignOptions(category: .gaming)
+)
+let installedCampaigns = response.campaigns
+
+Button("My Games") {
+    Task {
+        try? await PlaytimeStudio.showInstalledCampaigns()
+    }
+}
+```
+
+Common installed-campaign fields are `status`, `appName`, `iconImage`, `isCompleted`,
+`eventConfig.totalCoinsCollected`, `eventConfig.totalCoinsPossible`, and
+`rewardingExpiresAt`. The managed view handles installed-campaign rendering and opening the
+installed apps.
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Open Chatbot (Optional)
+
+Open the adjoe chatbot for support related to a campaign.
+
+```swift
+try await PlaytimeStudio.openChatbot(campaign: campaign)
+```
+
+</Step>
+<Step>
+
+## Handle Status and Errors
+
+Use `getStatus` before SDK campaign retrieval and whenever the UI needs to explain campaign
+availability.
+
+```swift
+do {
+    let status = try await Playtime.getStatus()
+
+    if status.isInitialized && status.details.campaignsAvailable {
+        // Campaigns can be requested and displayed.
+    } else {
+        // campaignsState is a list; it can hold more than one reason.
+        let states = status.details.campaignsState
+        if states.contains(.blocked) || states.contains(.vpnDetected) || states.contains(.geoMismatch) {
+            // Show an appropriate unavailable state.
+        }
+    }
+} catch let error as PlaytimeException {
+    // Handle the typed SDK error.
+} catch {
+    // Handle any other error.
+}
+```
+
+| Campaign state | Meaning                                              |
+| -------------- | ---------------------------------------------------- |
+| `.ready`       | Campaigns are available                              |
+| `.blocked`     | The user cannot receive campaigns                    |
+| `.vpnDetected` | Campaigns are unavailable while a VPN is detected    |
+| `.geoMismatch` | The user's location does not match the target region |
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+Call teardown when the user logs out or Playtime is no longer needed.
+
+```swift
+try await Playtime.teardown()
+```
+
+After teardown, `initPlaytime` must complete again before any other SDK method is used.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>

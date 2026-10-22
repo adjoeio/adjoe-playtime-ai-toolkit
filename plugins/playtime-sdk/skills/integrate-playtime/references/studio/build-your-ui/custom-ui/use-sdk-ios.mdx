@@ -1,0 +1,281 @@
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
+campaigns, track impressions, and open new or installed campaigns. To turn the returned models
+into UI, continue with [Build the Components](./build-components-ios.mdx).
+
+<AiToolkit />
+
+:::danger[Premium Feature]
+Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+Contact your AM to enable Studio and obtain your iOS SDK hash.
+:::
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+<InitializationBehavior />
+
+```swift
+import PlaytimeSDK
+
+let options = InitOptions(
+    sdkHash: "YOUR_SDK_HASH",
+    userId: "user_123"
+)
+
+do {
+    try await Playtime.initPlaytime(options: options)
+} catch let error as PlaytimeException {
+    // Present or log the initialization error.
+} catch {
+    // Any other error
+}
+```
+
+### InitOptions parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Manage TOS Consent
+
+<StudioTosConsent />
+
+```swift
+try await PlaytimeStudio.updateTosConsent(action: .accept)
+// Later, if needed:
+try await PlaytimeStudio.updateTosConsent(action: .withdraw)
+```
+
+</Step>
+<Step>
+
+## Get Campaigns and Offer Details
+
+Choose one retrieval path. Build campaign cards from [SDK Models](../sdk-models.md) and the
+[Visual Guide](./visual-guide.md). Preserve the returned order and unmodified campaign objects. Set up
+impression tracking immediately after retrieval so every rendered placement and custom details
+screen reports the correct event.
+
+### SDK campaigns
+
+Check availability, fetch campaigns, and retain the returned model for rendering and later
+SDK calls.
+
+```swift
+let status = try await Playtime.getStatus()
+guard status.details.campaignsAvailable else {
+    // Use campaignsState to decide which unavailable state to show.
+    return
+}
+
+let response = try await PlaytimeStudio.getCampaigns(
+    campaignOptions: CampaignOptions(
+        placement: .homePage,
+        category: .gaming,
+        displayFormat: .carousel
+    )
+)
+let campaigns = response.campaigns
+```
+
+**`CampaignOptions` parameters**
+
+<CampaignOptionsTable />
+
+### Offer API campaigns with SDK details
+
+Fetch and rank campaigns on your backend, then pass their tokens to `getOfferDetails` for
+SDK models containing images, descriptions, and reward information.
+
+```swift
+struct EnrichedOffer {
+    let token: String
+    let appID: String
+    let campaign: PlaytimeCampaign
+}
+
+let offers = [(token: "token_from_offer_api", appID: "app_id")]
+let tokens = offers.map { $0.token }
+let response = try await PlaytimeStudio.getOfferDetails(
+    tokens: tokens,
+    campaignOptions: CampaignOptions(
+        placement: .homePage,
+        displayFormat: .carousel
+    )
+)
+// Match by token: the response can omit or reorder offers.
+let offersByToken = Dictionary(offers.map { ($0.token, $0) }, uniquingKeysWith: { first, _ in first })
+let enrichedOffers = response.campaigns.compactMap { campaign in
+    offersByToken[campaign.token].map { offer in
+        EnrichedOffer(token: offer.token, appID: offer.appID, campaign: campaign)
+    }
+}
+
+```
+
+Keep each Offer API token and app ID associated with its enriched campaign model. See the
+[Offer API](../offer-api.mdx) for the backend response and ranking flow.
+
+</Step>
+<Step>
+
+## Track Default and Engaged Impressions
+
+After retrieving campaigns, report `.default` when the entire campaign card is visible in the
+viewport. The SDK handles deduplication.
+
+```swift
+try await PlaytimeStudio.executeCampaignImpression(
+    campaign: campaign,
+    impressionType: .default
+)
+```
+
+For an Offer API campaign, use the retained token and app ID:
+
+```swift
+try await PlaytimeStudio.executeOfferImpression(token: offer.token, appID: offer.appID)
+```
+
+When the user opens your custom details screen, report the additional engaged impression:
+
+```swift
+try await PlaytimeStudio.executeCampaignImpression(
+    campaign: campaign,
+    impressionType: .engaged
+)
+```
+
+Build cards and details from [SDK Models](../sdk-models.md) and the
+[iOS component recipes](./build-components-ios.mdx). Do not construct campaign objects yourself.
+
+</Step>
+<Step>
+
+## Open a Campaign in the Store
+
+Call `openInStore` only after recording a qualifying view: `.default` through
+`executeCampaignImpression` for an SDK campaign, or `executeOfferImpression` with the retained
+token and app ID for an Offer API campaign. An `.engaged` impression does not satisfy this
+prerequisite, and `openInStore` can fail without the qualifying view.
+
+:::warning[Record a view before openInStore]
+Require full card visibility before enabling the store action. Opening your custom details screen does not replace this requirement.
+:::
+
+```swift
+try await PlaytimeStudio.openInStore(
+    campaign: campaign,
+    useInlineInstall: true
+)
+```
+
+`useInlineInstall: true` requests the in-app App Store sheet. Pass `false` to open the
+external App Store app.
+
+</Step>
+<Step>
+
+## Get Installed Campaigns
+
+Use installed campaign models to build an "In Progress" section.
+
+```swift
+let response = try await PlaytimeStudio.getInstalledCampaigns(
+    options: InstalledCampaignOptions(category: .gaming)
+)
+let installedCampaigns = response.campaigns
+```
+
+Use [SDK Models](../sdk-models.md) to render installation status, completion, collected rewards,
+expiration, and milestone progress. Refresh after returning from the store and whenever the view
+regains focus.
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Open an Installed Campaign
+
+Reopen an installed app so the user can continue earning rewards:
+
+```swift
+try await PlaytimeStudio.openInstalledCampaign(campaign: installedCampaign)
+```
+
+</Step>
+<Step>
+
+## Open Chatbot (Optional)
+
+Open the adjoe chatbot for support related to a campaign.
+
+```swift
+try await PlaytimeStudio.openChatbot(campaign: campaign)
+```
+
+</Step>
+<Step>
+
+## Check Status and Handle Errors
+
+Use `getStatus` before SDK campaign retrieval and whenever the UI needs to explain campaign
+availability.
+
+```swift
+do {
+    let status = try await Playtime.getStatus()
+
+    if status.isInitialized && status.details.campaignsAvailable {
+        // Campaigns can be requested and displayed.
+    } else {
+        // campaignsState is a list; it can hold more than one reason.
+        let states = status.details.campaignsState
+        if states.contains(.blocked) || states.contains(.vpnDetected) || states.contains(.geoMismatch) {
+            // Show an appropriate unavailable state.
+        }
+    }
+} catch let error as PlaytimeException {
+    // Handle the typed SDK error.
+} catch {
+    // Handle any other error.
+}
+```
+
+| Campaign state | Meaning                                              |
+| -------------- | ---------------------------------------------------- |
+| `.ready`       | Campaigns are available                              |
+| `.blocked`     | The user cannot receive campaigns                    |
+| `.vpnDetected` | Campaigns are unavailable while a VPN is detected    |
+| `.geoMismatch` | The user's location does not match the target region |
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+Call teardown when the user logs out or Playtime is no longer needed.
+
+```swift
+try await Playtime.teardown()
+```
+
+After teardown, `initPlaytime` must complete again before any other SDK method is used.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+See [Best Practices](../../best-practices.md) for campaign refreshing, performance,
+and viewport tracking guidance.

@@ -1,0 +1,306 @@
+This guide covers the Standard React Native integration flow for displaying the
+Playtime catalog. The v5 bridge is Promise-based, so call its methods with `await` and
+handle rejected promises.
+
+<AiToolkit />
+
+Import the types and constants from the package. The declarations shipped with
+`react-native-adjoe-sdk@5.0.0-beta.4` are the source of truth.
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Import the native module and initialize it early so it can fetch campaign data. Select
+the SDK hash for the current native platform; never reuse a hash from another
+application or platform.
+
+<InitializationBehavior />
+
+```ts
+
+const sdkHash = Platform.select({
+  android: 'YOUR_ANDROID_SDK_HASH',
+  ios: 'YOUR_IOS_SDK_HASH',
+});
+
+if (!sdkHash) {
+  throw new Error('Playtime is supported only on Android and iOS.');
+}
+
+await Playtime.initPlaytime({
+  sdkHash,
+  userId: 'user_123',
+});
+```
+
+`userId` is required before displaying the catalog. If the user is not known at app
+startup, initialize again with the user ID after login and before calling
+`showCatalog`.
+
+Optional profile and extension data use the exported React Native types:
+
+```ts
+
+const options: InitOptions = {
+  sdkHash,
+  userId: 'user_123',
+  userProfile: {
+    gender: PlaytimeGender.FEMALE,
+    birthday: '1990-05-15',
+  },
+  extensions: {
+    subId1: 'partner_user_123',
+  },
+  language: 'en',
+  country: 'DE',
+  uaNetwork: 'network',
+  uaChannel: 'channel',
+  uaCampaignName: 'campaign',
+};
+```
+
+`extensions` supports `subId1` through `subId5`. Profile birthdays are ISO 8601 strings.
+
+### InitOptions Parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Check SDK Status
+
+Use `getStatus()` after initialization to verify that campaigns are available:
+
+```ts
+const status = await Playtime.getStatus();
+
+if (status.isInitialized && status.details.campaignsAvailable) {
+  // The catalog can be shown.
+}
+```
+
+An initialized SDK can still report no campaigns because of targeting, app
+configuration, device eligibility, or temporary inventory. Use the typed values in
+`status.details.campaignsState` to determine why campaigns are unavailable. The React
+Native bridge exposes numeric `PlaytimeCampaignsState` enum values, so use constants
+such as `PlaytimeCampaignsState.VPN_DETECTED` instead of comparing strings.
+
+<StatusExplanation />
+
+</Step>
+<Step>
+
+## Record the Placement Impression
+
+Call `executeImpressionEvent` every time the button or placement that opens the catalog becomes visible. Await it before `showCatalog` so the local impression record is available before the catalog checks it. Analytics delivery remains fire-and-forget, so this does not add network delay.
+
+This required step records how many users see the catalog entry point so you can measure conversion from placement views to catalog opens. Pass the predefined `CatalogPlacement` that describes the entry point, or use a custom string when none applies.
+
+```ts
+await Playtime.executeImpressionEvent(CatalogPlacement.Navbar);
+```
+
+The Promise resolves after the impression is recorded locally and does not wait for
+analytics delivery. `showCatalog` fails if `executeImpressionEvent` has not been called
+within the previous 30 minutes. Repeated calls safely refresh the visibility record
+while duplicate analytics events are suppressed. The placement passed here and the
+placement in `showCatalog` are independent and do not need to match.
+
+</Step>
+<Step>
+
+## Show the Catalog
+
+Pass catalog-specific options to `showCatalog`:
+
+```ts
+await Playtime.showCatalog({
+  placement: CatalogPlacement.Navbar,
+  category: AppCategory.GAMING,
+});
+```
+
+Keep the launch button disabled while the native catalog is being presented to prevent
+duplicate presentations.
+
+### CatalogOptions Parameters
+
+<CatalogOptionsTable />
+
+</Step>
+<Step>
+
+## Handle Errors
+
+The wrapper normalizes rejected native promises to `PlaytimeException`. Use the
+exported type guard before reading structured fields:
+
+```ts
+
+try {
+  await Playtime.showCatalog({
+    placement: CatalogPlacement.Navbar,
+    category: AppCategory.GAMING,
+  });
+} catch (error: unknown) {
+  if (isPlaytimeException(error)) {
+    console.warn(error.code, error.errorType, error.isRetryable, error.message);
+  } else {
+    console.warn('Unexpected Playtime error', error);
+  }
+}
+```
+
+Retry only when `isRetryable` is `true`. Ask the user to disable a VPN for
+`PlaytimeErrorType.NETWORK_VPN`; verify integration options for
+`PlaytimeErrorType.SDK_CONFIG`; and report persistent
+`PlaytimeErrorType.RESPONSE_FORMAT` or `PlaytimeErrorType.UNKNOWN` errors to adjoe.
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+Release SDK state when the current user signs out or when you need to reset the
+integration:
+
+```ts
+await Playtime.teardown();
+```
+
+<TeardownNote />
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+## Complete Example
+
+```tsx
+
+export default function RewardsScreen() {
+  const [ready, setReady] = useState(false);
+  const [impressionRecorded, setImpressionRecorded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('Loading rewards...');
+
+  useEffect(() => {
+    let active = true;
+
+    async function initializePlaytime() {
+      try {
+        const sdkHash = Platform.select({
+          android: 'YOUR_ANDROID_SDK_HASH',
+          ios: 'YOUR_IOS_SDK_HASH',
+        });
+
+        if (!sdkHash) {
+          throw new Error('Playtime is supported only on Android and iOS.');
+        }
+
+        await Playtime.initPlaytime({
+          sdkHash,
+          userId: 'user_123',
+        });
+
+        const status = await Playtime.getStatus();
+        if (active) {
+          setReady(status.isInitialized && status.details.campaignsAvailable);
+          setMessage(
+            status.details.campaignsAvailable
+              ? 'Rewards are ready.'
+              : 'No campaigns are available right now.',
+          );
+        }
+      } catch (error: unknown) {
+        if (active) {
+          setMessage(
+            isPlaytimeException(error)
+              ? error.message
+              : 'Playtime initialization failed.',
+          );
+        }
+      }
+    }
+
+    void initializePlaytime();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    async function recordImpression() {
+      try {
+        await Playtime.executeImpressionEvent(CatalogPlacement.Navbar);
+        setImpressionRecorded(true);
+      } catch (error: unknown) {
+        setMessage(
+          isPlaytimeException(error) ? error.message : 'Could not record placement view.',
+        );
+      }
+    }
+
+    void recordImpression();
+  }, [ready]);
+
+  async function openCatalog() {
+    setBusy(true);
+    try {
+      await Playtime.showCatalog({
+        placement: CatalogPlacement.Navbar,
+        category: AppCategory.GAMING,
+      });
+    } catch (error: unknown) {
+      setMessage(isPlaytimeException(error) ? error.message : 'Could not open rewards.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View>
+      <Text>{message}</Text>
+      <Button
+        title={busy ? 'Opening...' : 'Open rewards'}
+        disabled={!ready || !impressionRecorded || busy}
+        onPress={() => void openCatalog()}
+      />
+    </View>
+  );
+}
+```
+
+## API Reference
+
+See the [Playtime API Reference](../api-reference.md) for option values and platform API links.
+
+## Verification Checklist
+
+1. Use the Android and iOS SDK hashes only in their corresponding native builds.
+2. Await `initPlaytime` before calling another SDK method.
+3. Initialize again with `userId` if it was unavailable at app startup.
+4. Confirm `getStatus` reports `isInitialized` and the intended user ID.
+5. Use `details.campaignsAvailable` as the primary availability signal.
+6. Inspect `details.campaignsState` when campaigns are unavailable.
+7. Record an impression every time the catalog entry point becomes visible.
+8. Await the local impression before opening the catalog.
+9. Pass only presentation fields in the catalog options.
+10. Prevent duplicate catalog presentations while a launch is in progress.
+11. Handle every `PlaytimeException` field and retry only retryable failures.
+12. Call `teardown` on logout and initialize again before the next use.
+13. Test initialization, status, impression refresh, catalog presentation, errors, and
+    teardown on physical Android and iOS devices.

@@ -1,0 +1,182 @@
+:::caution[Experimental]
+Drop-In UI is in beta and available for publisher integrations. Public names, integration
+APIs, and layout details may change in future prerelease versions, including breaking
+changes. Review the changelog when upgrading.
+:::
+
+Drop-In UI is the fastest way to add a Playtime Studio placement without building the
+campaign interface yourself. The Shelf loads and renders campaigns, handles standard
+campaign actions, records view and click analytics, and reports its lifecycle state.
+
+<Stepper>
+<Step>
+
+## Complete iOS Setup
+
+Complete the [iOS Get Started guide](../getting-started-ios.mdx), including App Attest,
+and verify that the Playtime SDK initializes successfully. Wait for `initPlaytime` to
+complete before calling any Studio API.
+
+</Step>
+<Step>
+
+## Enable Drop-In UI
+
+Work with your adjoe Account Manager to enable Studio and Drop-In UI for the app. Confirm
+the placement ID for each Shelf and agree on its initial appearance and behavior.
+
+</Step>
+<Step>
+
+## Initialize with the User ID
+
+Initialize Playtime as early as possible during app launch with the external user ID, and wait
+for successful completion before using another SDK method. Keep the SDK hash in the app's secure
+configuration rather than hard-coding it.
+
+```swift
+@_spi(Experimental) import PlaytimeSDK
+
+try await Playtime.initPlaytime(
+    options: InitOptions(sdkHash: sdkHash, userId: externalUserID)
+)
+```
+
+If the user ID becomes available only after sign-in, initialize again after sign-in with
+the user ID and all intended options.
+
+</Step>
+<Step>
+
+## Record TOS Consent
+
+<StudioTosConsent />
+
+```swift
+try await PlaytimeStudio.updateTosConsent(action: .accept)
+```
+
+```swift
+try await PlaytimeStudio.updateTosConsent(action: .withdraw)
+```
+
+</Step>
+<Step>
+
+## Create and Retain the Controller
+
+Create one controller for each placement and retain it for as long as the placement is in
+use. Create a new controller if its placement or callbacks change.
+
+The Shelf API is experimental in beta.4. Use `@_spi(Experimental) import PlaytimeSDK` in
+every source file that references its types.
+
+```swift
+let controller = try await PlaytimeStudio.makeShelfController(
+    options: PlaytimeShelfOptions(
+        placement: .init(rawValue: "home-feed"),
+        onStatusChanged: { status in
+            // Handle ready, empty, and unavailable states.
+        },
+        onSizeChanged: { size in
+            // Re-measure a custom UIKit host if needed.
+        }
+    )
+)
+```
+
+</Step>
+<Step>
+
+## Embed the Shelf
+
+Choose the host used by the placement.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI">
+
+Create and retain the controller outside the view's `body`, then render it when available:
+
+```swift
+if let controller = viewModel.shelfController {
+    PlaytimeShelfRepresentable(controller: controller)
+}
+```
+
+Do not recreate the controller during SwiftUI updates.
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+Create a renderer from the retained controller:
+
+```swift
+let shelfView = controller.makeShelfView()
+```
+
+Pin it to all four edges of its container. Do not set a fixed height: the Shelf has an
+intrinsic height and resolves to zero while empty or unavailable.
+
+</TabItem>
+<TabItem value="collection" label="UICollectionView">
+
+Keep the controller in the screen-level owner, not in a reusable cell. Let the cell retain
+only the Shelf view returned by `makeShelfView()`. Use a self-sizing cell, pin the Shelf to
+all four edges, detach it during reuse, and invalidate the collection layout from
+`onSizeChanged`.
+
+</TabItem>
+</Tabs>
+
+</Step>
+<Step>
+
+## Prefetch When Useful
+
+Call `prefetch()` when the placement is known before it appears. It can run before a Shelf
+view exists, and the later renderer reuses the prefetched session.
+
+```swift
+shelfController?.prefetch()
+```
+
+</Step>
+<Step>
+
+## Handle Shelf States
+
+Use `onStatusChanged` to respond to ready, empty, and unavailable states. The Shelf
+self-hides at zero height when there is no content. Use `onSizeChanged` when the host needs
+explicit layout invalidation after the Shelf size changes.
+
+</Step>
+<Step>
+
+## Release the Shelf
+
+Remove and release Shelf views and their retained controllers before calling `Playtime.teardown()`.
+Create a new controller after initializing Playtime again.
+
+</Step>
+<Step>
+
+## Verify the Integration
+
+Verify initialization and explicit TOS acceptance, the configured placement reaching the
+expected state, correct sizing across width and Dynamic Type changes, configured campaign
+actions, and collection reuse without duplicate views or controllers.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+<DropInUiConfiguration />
+
+## API Reference
+
+See the [iOS Studio SDK reference](https://playtime-api-reference.adjoe.io/monetize/ios/5.0.0-beta.4/studio/index.html)
+for all experimental Drop-In UI types and method signatures.

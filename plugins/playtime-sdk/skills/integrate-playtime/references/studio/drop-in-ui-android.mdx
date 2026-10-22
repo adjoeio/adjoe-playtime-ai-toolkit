@@ -1,0 +1,256 @@
+:::caution[Experimental]
+Drop-In UI is in beta and available for publisher integrations. Public names, integration
+APIs, and layout details may change in future prerelease versions, including breaking
+changes. Review the changelog when upgrading.
+:::
+
+Drop-In UI is the fastest way to add a Playtime Studio placement without building the
+campaign interface yourself. The Shelf loads and renders campaigns, handles standard
+campaign actions, records view and click analytics, and reports its lifecycle state.
+
+<Stepper>
+<Step>
+
+## Complete Android Setup
+
+Complete the [Android Get Started guide](../getting-started-android.mdx) with SDK version
+`5.0.0-beta.4`, then verify that Playtime initializes successfully. Drop-In UI requires a
+`FragmentActivity`, such as `AppCompatActivity`, and uses the `io.adjoe.sdk.dropui` package.
+
+</Step>
+<Step>
+
+## Enable Drop-In UI
+
+Work with your adjoe Account Manager to enable Studio and Drop-In UI for the app. Confirm
+the placement ID for each Shelf and agree on its initial appearance and behavior.
+
+</Step>
+<Step>
+
+## Opt In to the Experimental API
+
+Annotate the class or function that integrates the Shelf:
+
+```kotlin
+import io.adjoe.sdk.ExperimentalDropInApi
+
+@OptIn(ExperimentalDropInApi::class)
+class PlaytimeShelfActivity : AppCompatActivity() {
+    // Shelf integration
+}
+```
+
+</Step>
+<Step>
+
+## Initialize with the User ID
+
+Initialize Playtime as early as possible during app launch with the external user ID, and
+wait for successful completion before using another SDK method.
+
+```kotlin
+Playtime.initPlaytime(
+    InitOptions(sdkHash = sdkHash, userId = externalUserId),
+    object : PlaytimeInitListener {
+        override fun onSuccess() {
+            // The SDK is ready.
+        }
+
+        override fun onError(error: PlaytimeException) {
+            // Handle initialization failure.
+        }
+    },
+)
+```
+
+</Step>
+<Step>
+
+## Record TOS Consent
+
+<StudioTosConsent />
+
+```kotlin
+PlaytimeStudio.updateTosConsent(
+    TosConsentAction.ACCEPT,
+    object : PlaytimeTosListener {
+        override fun onUpdated() {
+            // The Shelf can now load campaigns.
+        }
+
+        override fun onError(error: PlaytimeException) {
+            // Handle the failure.
+        }
+    },
+)
+```
+
+Use `TosConsentAction.WITHDRAW` if the user withdraws consent.
+
+</Step>
+<Step>
+
+## Add and Bind the Shelf
+
+Choose the host used by the placement. Create the controller only after initialization and
+TOS acceptance have completed. Pass the current `FragmentActivity` when creating and binding
+the controller, including after a configuration change.
+
+<Tabs>
+<TabItem value="views" label="Views and XML">
+
+Add a `PlaytimeShelfView` with a content-driven height:
+
+```xml
+<io.adjoe.sdk.dropui.PlaytimeShelfView
+    android:id="@+id/playtimeShelf"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+```
+
+Create the controller, bind the view, and fetch campaigns:
+
+```kotlin
+val shelfView = findViewById<PlaytimeShelfView>(R.id.playtimeShelf)
+
+PlaytimeStudio.makeShelfViewController(
+    activity = this,
+    options = PlaytimeShelfOptions(
+        placement = PlaytimeShelfPlacement("home_feed"),
+        onStatusChanged = { status ->
+            // Handle Ready, Empty, and Unavailable states.
+        },
+        onSizeChanged = { width, height ->
+            // Re-measure a custom host if needed.
+        },
+    ),
+    listener = object : PlaytimeShelfControllerListener {
+        override fun onSuccess(controller: PlaytimeShelfController) {
+            controller.bind(
+                shelfView,
+                this@PlaytimeShelfActivity,
+                object : PlaytimeShelfBindListener {
+                    override fun onSuccess() {
+                        controller.fetch()
+                    }
+
+                    override fun onFailure(error: PlaytimeException) {
+                        // Handle binding failure.
+                    }
+                },
+            )
+        }
+
+        override fun onFailure(error: PlaytimeException) {
+            // Handle controller creation failure.
+        }
+    },
+)
+```
+
+In a Fragment, pass `requireActivity()` to both controller creation and `bind`.
+
+</TabItem>
+<TabItem value="compose" label="Jetpack Compose">
+
+Embed `PlaytimeShelfView` with `AndroidView`. If the Shelf is inside a scrollable Compose
+container, bridge nested scrolling so its internal list cooperates with the parent.
+
+```kotlin
+@Composable
+fun PlaytimeShelf(
+    activity: FragmentActivity,
+    controller: PlaytimeShelfController,
+) {
+    val nestedScrollInterop = rememberNestedScrollInteropConnection()
+
+    AndroidView(
+        factory = { context ->
+            PlaytimeShelfView(context).also { shelfView ->
+                controller.bind(
+                    shelfView,
+                    activity,
+                    object : PlaytimeShelfBindListener {
+                        override fun onSuccess() {
+                            controller.fetch()
+                        }
+
+                        override fun onFailure(error: PlaytimeException) {
+                            // Handle binding failure.
+                        }
+                    },
+                )
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .nestedScroll(nestedScrollInterop),
+    )
+}
+```
+
+Create and retain the controller outside the composable. Do not recreate it during
+recomposition. The `nestedScroll` modifier is optional when no Compose scrolling parent exists.
+
+</TabItem>
+</Tabs>
+
+</Step>
+<Step>
+
+## Configure the Controller
+
+`PlaytimeShelfOptions` supports:
+
+- `placement`: a stable identifier for the integration point.
+- `requestedVariant`: an optional Shelf variant; omit it to use the configured default.
+- `category`: the requested campaign category; defaults to `AppCategory.GAMING`.
+- `actionObserver`: observes an action after the SDK performs it. It cannot replace the action.
+- `onStatusChanged`: reports `Idle`, `Loading`, `Ready`, `Empty`, or `Unavailable`.
+- `onSizeChanged`: reports advisory content dimensions in pixels.
+
+Call `fetch()` on the main thread to load or reload campaigns. For an `Unavailable` status,
+inspect its `reason` and `retryable` fields before offering a retry.
+
+</Step>
+<Step>
+
+## Release the Controller
+
+Call `release()` on the main thread from the lifecycle owner's final cleanup, such as
+`ViewModel.onCleared()`. It cancels in-flight work and clears references. Do not call another
+controller method after releasing it, and release all Drop-In UI controllers before calling
+`Playtime.teardown(...)`.
+
+```kotlin
+override fun onCleared() {
+    shelfController?.release()
+    shelfController = null
+    super.onCleared()
+}
+```
+
+</Step>
+<Step>
+
+## Verify the Integration
+
+Verify initialization and explicit TOS acceptance, each configured placement reaching the
+expected state, correct sizing, campaign actions, retries, configuration changes, and cleanup
+without duplicate views or controllers.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+<DropInUiConfiguration />
+
+## API Reference
+
+See the [Android Studio SDK reference](https://playtime-api-reference.adjoe.io/monetize/android/5.0.0-beta.4/studio/index.html)
+for all experimental Drop-In UI types and method signatures.

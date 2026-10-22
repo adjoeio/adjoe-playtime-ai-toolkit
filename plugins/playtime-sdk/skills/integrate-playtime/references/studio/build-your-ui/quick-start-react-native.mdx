@@ -1,0 +1,248 @@
+Quick-Start Custom UI combines your React Native campaign placements with adjoe-managed campaign,
+offer, and installed-campaign views. The React Native v5 bridge exposes Promise-based methods;
+await each operation and handle rejected Promises.
+
+<AiToolkit />
+
+:::danger[Premium Feature]
+Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+Contact your AM to enable Studio and obtain separate Android and iOS SDK hashes.
+:::
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Complete [React Native setup](../../getting-started-react-native.mdx), then initialize with the SDK
+hash for the current platform. Never use the Android hash in an iOS build or the iOS hash in an
+Android build.
+
+<InitializationBehavior />
+
+```tsx
+
+await Playtime.initPlaytime({
+  sdkHash: 'YOUR_PLATFORM_SDK_HASH',
+  userId: 'user_123',
+});
+```
+
+### InitOptions parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Manage TOS Consent
+
+<StudioTosConsent />
+
+```tsx
+
+await PlaytimeStudio.updateTosConsent(TosConsentAction.ACCEPT);
+
+// If the user later withdraws consent:
+await PlaytimeStudio.updateTosConsent(TosConsentAction.WITHDRAW);
+```
+
+</Step>
+<Step>
+
+## Request Usage Permission (Android Only)
+
+Android usage access enables time-based campaigns and play-duration measurement. Request it
+after clear user intent and guard the Android-only API. iOS has no usage-access prompt and does
+not support Android time-based rewards.
+
+```tsx
+
+if (Platform.OS === 'android') {
+  const status = await Playtime.getStatus();
+  if (!status.isUsagePermissionAccepted) {
+    await PlaytimeStudio.showPermissionsPrompt();
+  }
+}
+```
+
+Users without usage access can still receive other eligible campaign and reward types.
+
+</Step>
+<Step>
+
+## Get SDK Campaigns or Offer API Campaigns
+
+Build campaign cards from [SDK Models](./sdk-models.md). For a full publisher-built experience,
+see the [Advanced Custom UI Visual Guide](./custom-ui/visual-guide.md). Preserve the returned
+order and pass unmodified campaign objects to later SDK calls.
+
+### SDK Campaigns
+
+Check availability, then fetch campaigns for your placement. Preserve the returned order.
+
+```tsx
+
+const status = await Playtime.getStatus();
+if (!status.details.campaignsAvailable) {
+  // Do not render the placement. Inspect campaignsState for the reason.
+  return;
+}
+
+const campaignOptions: CampaignOptions = {
+  placement: StudioPlacement.Navbar,
+  category: AppCategory.GAMING,
+};
+const response = await PlaytimeStudio.getCampaigns(campaignOptions);
+const campaigns = response.campaigns;
+```
+
+### Offer API Campaigns
+
+Select offers on your backend, then enrich their tokens with SDK models. Keep each Offer API token
+and app ID associated with its enriched campaign model. Keep Offer API credentials and server-side
+API tokens out of the app. An SDK campaign-availability check is not required for this route
+because the Offer API handles eligibility.
+
+```tsx
+const offer = { token: 'token_from_offer_api', appID: 'app_id_from_offer_api' };
+const response = await PlaytimeStudio.getOfferDetails([offer.token], campaignOptions);
+const campaigns = response.campaigns;
+```
+
+See [Offer API](./offer-api.mdx) for the server-side request and token flow.
+
+<CampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Track the Qualifying Default View
+
+After retrieval, report a default impression when the entire campaign card is visible in the
+viewport. The SDK handles deduplication. This view qualifies the later store interaction.
+
+For a campaign selected by the SDK and returned by `getCampaigns`:
+
+```tsx
+
+await PlaytimeStudio.executeCampaignImpression(campaign, PlaytimeImpressionType.DEFAULT);
+```
+
+For a campaign selected by the Offer API, including one enriched by `getOfferDetails`:
+
+```tsx
+await PlaytimeStudio.executeOfferImpression(offer.token, offer.appID);
+```
+
+</Step>
+<Step>
+
+## Open Managed Campaign or Offer Details
+
+Open adjoe's managed details when the user selects a visible card:
+
+```tsx
+// Campaign selected by the SDK:
+await PlaytimeStudio.showCampaignDetails(campaign);
+
+// Retained identifiers for a campaign selected by the Offer API:
+await PlaytimeStudio.showOfferDetails(offer.token, offer.appID);
+```
+
+These managed details flows report the engaged impression automatically. Do not send a manual
+engaged impression when opening them.
+
+</Step>
+<Step>
+
+## Get Installed Campaigns and Open the Managed View
+
+Fetch installed campaigns to render a compact in-progress placement. Refresh after the app
+returns from the store and whenever the view regains focus so reward progress is current.
+
+```tsx
+const response = await PlaytimeStudio.getInstalledCampaigns({
+  category: AppCategory.GAMING,
+});
+const installedCampaigns = response.campaigns;
+
+await PlaytimeStudio.showInstalledCampaigns();
+```
+
+Use [SDK Models](./sdk-models.md) for installed status, completed rewards, reward totals,
+expiration, and milestone fields. The managed installed-campaign view handles the full progress
+experience.
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Open Chatbot (Optional)
+
+Open support for a campaign, or omit the campaign for general support:
+
+```tsx
+await PlaytimeStudio.openChatbot(campaign);
+await PlaytimeStudio.openChatbot();
+```
+
+</Step>
+<Step>
+
+## Check Status and Handle Errors
+
+Use `details.campaignsAvailable` as the primary signal for whether to show SDK campaigns.
+
+```tsx
+const status = await Playtime.getStatus();
+
+if (status.isInitialized && status.details.campaignsAvailable) {
+  // Campaigns can be shown.
+}
+```
+
+<StatusExplanation />
+
+All SDK methods return Promises and can reject with a structured `PlaytimeException`. Use
+`isRetryable` to decide whether to retry and retain the categorized error for diagnostics.
+
+```tsx
+
+try {
+  const response = await PlaytimeStudio.getCampaigns(campaignOptions);
+  const campaigns = response.campaigns;
+} catch (error: unknown) {
+  if (isPlaytimeException(error)) {
+    console.warn(error.code, error.errorType, error.isRetryable, error.message);
+  }
+}
+```
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown
+
+```tsx
+await Playtime.teardown();
+```
+
+<TeardownNote />
+
+On Android, campaign operations resolve current campaign objects through an internal cache keyed
+by `campaignUUID`. Do not construct campaign objects manually or reuse stale objects after
+teardown; initialize again and fetch fresh campaigns.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>

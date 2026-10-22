@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "adjoe-playtime",
+  "description": "Playtime SDK integration skills for coding agents.",
+  "owner": {
+    "name": "adjoe"
+  },
+  "plugins": [
+    {
+      "name": "playtime-sdk",
+      "displayName": "adjoe Playtime SDK",
+      "source": "./plugins/playtime-sdk",
+      "description": "Guidance for integrating the adjoe Playtime SDK.",
+      "version": "0.2.1",
+      "category": "developer-tools",
+      "author": {
+        "name": "adjoe"
+      },
+      "repository": "https://github.com/adjoeio/adjoe-playtime-ai-toolkit",
+      "license": "UNLICENSED",
+      "keywords": [
+        "adjoe",
+        "playtime",
+        "sdk",
+        "ios",
+        "android",
+        "mobile"
+      ]
+    }
+  ]
+}

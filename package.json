@@ -1,0 +1,13 @@
+{
+  "name": "@adjoe/mob-agent-plugins",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./.opencode/plugins/mob-plugins.js"
+  },
+  "files": [
+    ".opencode/plugins/mob-plugins.js",
+    "plugins"
+  ]
+}
