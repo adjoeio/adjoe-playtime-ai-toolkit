@@ -3,8 +3,10 @@
   "version": "0.2.2",
   "private": true,
   "type": "module",
+  "main": "./.opencode/plugins/mob-plugins.js",
   "exports": {
-    ".": "./.opencode/plugins/mob-plugins.js"
+    ".": "./.opencode/plugins/mob-plugins.js",
+    "./server": "./.opencode/plugins/mob-plugins.js"
   },
   "files": [
     ".opencode/plugins/mob-plugins.js",
