@@ -154,6 +154,10 @@ Individual status methods have been consolidated under `Playtime.getStatus()`:
 
 Reward notifications are disabled by default in v5. If you want to use them, contact your Technical Account Manager (TAM) to have the configuration enabled.
 
+### Notification Permission Prompt
+
+In v4, opening the catalog on Android 13 and later showed the system `POST_NOTIFICATIONS` permission dialog. In v5 the SDK no longer requests this permission by default. If you want the SDK to request it, contact your TAM to have the configuration enabled, or request the permission from your own app.
+
 ### Removed APIs
 
 The following APIs have been removed entirely in v5 (no replacement):
@@ -225,7 +229,7 @@ All failures can be handled as `PlaytimeException`. `PlaytimeNotInitializedExcep
 6. Call `executeImpressionEvent` every time the catalog entry point becomes visible
 7. Replace `showCatalog` to use `CatalogOptions` with type-safe placements
 8. If you disabled SDK warm-up in v4, remove the obsolete `io.adjoe.Playtime.AUTO_INIT_ENABLED` manifest entry
-9. Contact your TAM if you want reward notifications enabled
+9. Contact your TAM if you want reward notifications or the notification permission prompt enabled
 10. Replace individual status getters (`getUserId`, `getVersion`, etc.) with `getStatus()`
 11. Remove any usage of `getCatalogIntent`, `sendUserEvent`, `setUAParams`
 12. Update error handling to use the new structured `PlaytimeException`

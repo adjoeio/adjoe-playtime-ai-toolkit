@@ -17,13 +17,49 @@ Complete the [iOS Get Started guide](../getting-started-ios.mdx), including App 
 and verify that the Playtime SDK initializes successfully. Wait for `initPlaytime` to
 complete before calling any Studio API.
 
+Choose one dependency manager before editing the app: CocoaPods or Swift Package Manager.
+Confirm the dependency file, app target, and minimum deployment target. Do not add both
+dependency declarations. Resolve `PlaytimeSDK` at version `>= 5.0.0`.
+
+<Tabs groupId="ios-pm">
+<TabItem value="cocoapods" label="CocoaPods">
+
+Add the adjoe source before the CocoaPods CDN and add the framework to the application target:
+
+```ruby
+source 'https://github.com/adjoeio/PlaytimeSpecExternal.git'
+source 'https://cdn.cocoapods.org/'
+
+target 'PublisherApp' do
+  use_frameworks!
+  pod 'PlaytimeSDK', '>= 5.0.0'
+end
+```
+
+Run `pod install` and open the generated `.xcworkspace`.
+
+</TabItem>
+<TabItem value="spm" label="Swift Package Manager">
+
+Add `https://github.com/adjoeio/adjoe-monetize-spm` to your app target in Xcode,
+or declare the equivalent package dependency and product in `Package.swift`. Select the
+`PlaytimeSDK` product and resolve version `>= 5.0.0`.
+
+</TabItem>
+</Tabs>
+
 </Step>
 <Step>
 
 ## Enable Drop-In UI
 
 Work with your adjoe Account Manager to enable Studio and Drop-In UI for the app. Confirm
-the placement ID for each Shelf and agree on its initial appearance and behavior.
+the placement ID and destination screen for each Shelf, then agree on its initial appearance
+and behavior. Shelf APIs throw unless Studio integration is enabled for your app.
+
+Before implementation, identify the SDK hash's secure configuration source, where the
+external user ID becomes available, the legal flow that records acceptance and revocation,
+and whether each placement is hosted by SwiftUI, a `UIView`, or a `UICollectionView`.
 
 </Step>
 <Step>
@@ -32,7 +68,9 @@ the placement ID for each Shelf and agree on its initial appearance and behavior
 
 Initialize Playtime as early as possible during app launch with the external user ID, and wait
 for successful completion before using another SDK method. Keep the SDK hash in the app's secure
-configuration rather than hard-coding it.
+configuration rather than hard-coding it. Use the app's existing async startup and error-reporting
+pattern, such as a SwiftUI `App` task, app coordinator, or application delegate task. Do not
+fire-and-forget initialization.
 
 ```swift
 @_spi(Experimental) import PlaytimeSDK
@@ -42,8 +80,9 @@ try await Playtime.initPlaytime(
 )
 ```
 
-If the user ID becomes available only after sign-in, initialize again after sign-in with
-the user ID and all intended options.
+If the user ID becomes available only after sign-in, initialize at launch with the available
+options. After sign-in, call `Playtime.initPlaytime(options:)` again with the user ID and all
+intended options, including the SDK hash and applicable profile, extension, and language settings.
 
 </Step>
 <Step>
@@ -60,6 +99,10 @@ try await PlaytimeStudio.updateTosConsent(action: .accept)
 try await PlaytimeStudio.updateTosConsent(action: .withdraw)
 ```
 
+The user must be initialized with a user ID. After acceptance, refresh an existing Shelf or
+create it when its host is visible. Do not infer consent or add a consent UI without product
+approval.
+
 </Step>
 <Step>
 
@@ -71,10 +114,17 @@ use. Create a new controller if its placement or callbacks change.
 The Shelf API is experimental in beta.4. Use `@_spi(Experimental) import PlaytimeSDK` in
 every source file that references its types.
 
+A placement can have multiple remotely configured Shelf variants. Set `requestedVariant` to
+the variant ID configured for the placement when the screen needs a specific variant. Omit it
+to use that placement's default variant. Create a new controller when changing variants because
+controller options are immutable.
+
 ```swift
 let controller = try await PlaytimeStudio.makeShelfController(
     options: PlaytimeShelfOptions(
         placement: .init(rawValue: "home-feed"),
+        requestedVariant: "compact-carousel",
+        category: .gaming,
         onStatusChanged: { status in
             // Handle ready, empty, and unavailable states.
         },
@@ -84,6 +134,20 @@ let controller = try await PlaytimeStudio.makeShelfController(
     )
 )
 ```
+
+Use a variant ID only after confirming it is configured for the selected placement. For the
+placement default, omit `requestedVariant`:
+
+```swift
+let options = PlaytimeShelfOptions(
+    placement: .init(rawValue: "home-feed"),
+    category: .gaming
+)
+```
+
+Use `onStatusChanged` to update your application's loading, empty, or error UI. If campaign-action
+analytics or observation is needed, provide `actionObserver`; it runs on the main actor after SDK
+tracking and configured navigation have completed.
 
 </Step>
 <Step>
@@ -105,6 +169,9 @@ if let controller = viewModel.shelfController {
 
 Do not recreate the controller during SwiftUI updates.
 
+Keep the controller in an `@MainActor` observable view model. `PlaytimeShelfRepresentable`
+bridges UIKit and self-sizes; release the controller when the placement lifecycle ends.
+
 </TabItem>
 <TabItem value="uikit" label="UIKit">
 
@@ -115,7 +182,11 @@ let shelfView = controller.makeShelfView()
 ```
 
 Pin it to all four edges of its container. Do not set a fixed height: the Shelf has an
-intrinsic height and resolves to zero while empty or unavailable.
+intrinsic height and resolves to zero while empty or unavailable. Call `shelfView.invalidateLayout()`
+when the host layout changes without a normal bounds or layout pass.
+
+Only retain the latest `PlaytimeShelfView` returned by a controller. A later `makeShelfView()`
+replaces the previous renderer. Use another controller for an independent placement or session.
 
 </TabItem>
 <TabItem value="collection" label="UICollectionView">
@@ -123,7 +194,18 @@ intrinsic height and resolves to zero while empty or unavailable.
 Keep the controller in the screen-level owner, not in a reusable cell. Let the cell retain
 only the Shelf view returned by `makeShelfView()`. Use a self-sizing cell, pin the Shelf to
 all four edges, detach it during reuse, and invalidate the collection layout from
-`onSizeChanged`.
+`onSizeChanged`. Do not impose a fixed cell height. For `empty` or `unavailable`, remove the
+Shelf item or section when that matches your application's UI; the renderer otherwise self-hides.
+
+For a diffable data source, add a stable Shelf item to the existing snapshot and use a dedicated
+`UICollectionView.CellRegistration` to configure the host cell from the retained controller.
+Include or remove the item as application state changes. A size change normally needs only
+`collectionView.collectionViewLayout.invalidateLayout()`; reload the item only when the existing
+layout requires a snapshot update.
+
+For a classic data source, add one Shelf item to the selected section only when it should display.
+Configure its dedicated cell in `collectionView(_:cellForItemAt:)`. Enable `estimatedItemSize` for
+a flow layout, or use the app's existing self-sizing approach.
 
 </TabItem>
 </Tabs>
@@ -140,14 +222,19 @@ view exists, and the later renderer reuses the prefetched session.
 shelfController?.prefetch()
 ```
 
+For a collection view, call `prefetch()` when its Shelf index path is requested through the
+existing `UICollectionViewDataSourcePrefetching` owner. Prefer screen-level prefetching when the
+placement is known before the collection begins loading.
+
 </Step>
 <Step>
 
 ## Handle Shelf States
 
-Use `onStatusChanged` to respond to ready, empty, and unavailable states. The Shelf
+Use `onStatusChanged` to respond to `ready`, `empty`, and `unavailable` states. The Shelf
 self-hides at zero height when there is no content. Use `onSizeChanged` when the host needs
-explicit layout invalidation after the Shelf size changes.
+explicit layout invalidation after the Shelf size changes. Confirm whether observation is required
+after a campaign action and handle it through `actionObserver` when needed.
 
 </Step>
 <Step>
@@ -164,7 +251,9 @@ Create a new controller after initializing Playtime again.
 
 Verify initialization and explicit TOS acceptance, the configured placement reaching the
 expected state, correct sizing across width and Dynamic Type changes, configured campaign
-actions, and collection reuse without duplicate views or controllers.
+actions, and collection reuse without duplicate views or controllers. Confirm that the intended
+external user ID is used, App Attest is configured for production, empty and unavailable states
+are intentional, and any action observer receives completed actions.
 
 </Step>
 <Step>
