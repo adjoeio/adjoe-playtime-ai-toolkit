@@ -154,6 +154,37 @@ In a Fragment, pass `requireActivity()` to both controller creation and `bind`.
 </TabItem>
 <TabItem value="compose" label="Jetpack Compose">
 
+Create the controller outside any composable so recomposition does not recreate it. Show the Shelf once the controller is ready:
+
+```kotlin
+var shelfController by mutableStateOf<PlaytimeShelfController?>(null)
+
+PlaytimeStudio.makeShelfViewController(
+    activity = this,
+    options = PlaytimeShelfOptions(
+        placement = PlaytimeShelfPlacement("home_feed"),
+        onStatusChanged = { status ->
+            // Handle Ready, Empty, and Unavailable states.
+        },
+    ),
+    listener = object : PlaytimeShelfControllerListener {
+        override fun onSuccess(controller: PlaytimeShelfController) {
+            shelfController = controller
+        }
+
+        override fun onFailure(error: PlaytimeException) {
+            // Handle controller creation failure.
+        }
+    },
+)
+
+setContent {
+    shelfController?.let { controller ->
+        PlaytimeShelf(activity = this, controller = controller)
+    }
+}
+```
+
 Embed `PlaytimeShelfView` with `AndroidView`. If the Shelf is inside a scrollable Compose
 container, bridge nested scrolling so its internal list cooperates with the parent.
 
@@ -190,8 +221,7 @@ fun PlaytimeShelf(
 }
 ```
 
-Create and retain the controller outside the composable. Do not recreate it during
-recomposition. The `nestedScroll` modifier is optional when no Compose scrolling parent exists.
+The `nestedScroll` modifier is optional when no Compose scrolling parent exists.
 
 </TabItem>
 </Tabs>
