@@ -1,11 +1,11 @@
 # Build the Components
 
-> Use this reference after fetching campaigns with the
-> [Advanced Custom UI SDK guide](use-sdk-unity.md). It maps [SDK Models](../sdk-models.md) to the
-> `PlaytimeCampaign` properties you bind to your own Unity UI (prefabs, UGUI, or TextMeshPro
-> elements). Read the model properties in your controller script and set them on the UI objects you
-> built. Keep SDK calls outside the view objects and retain each unmodified campaign, or its Offer
-> API token and app ID, for tracking and actions.
+Use this reference after fetching campaigns with the
+[Advanced Custom UI SDK guide](use-sdk-unity.md). It maps [SDK Models](../sdk-models.md) to the
+`PlaytimeCampaign` properties you bind to your own Unity UI (prefabs, UGUI, or TextMeshPro
+elements). Read the model properties in your controller script and set them on the UI objects you
+built. Keep SDK calls outside the view objects and retain each unmodified campaign, or its Offer
+API token and app ID, for tracking and actions.
 
 > **Important: Treat the SDK response as the source of truth**
 >

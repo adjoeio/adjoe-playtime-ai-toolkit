@@ -1,9 +1,9 @@
 # Build the Components
 
-> Use these Flutter widget recipes after fetching campaigns with the
-> [Advanced Custom UI SDK guide](use-sdk-flutter.md). They map [SDK Models](../sdk-models.md) to
-> focused Flutter UI. Keep SDK calls outside visual widgets and retain each unmodified
-> campaign, or its Offer API token and app ID, for tracking and actions.
+Use these Flutter widget recipes after fetching campaigns with the
+[Advanced Custom UI SDK guide](use-sdk-flutter.md). They map [SDK Models](../sdk-models.md) to
+focused Flutter UI. Keep SDK calls outside visual widgets and retain each unmodified
+campaign, or its Offer API token and app ID, for tracking and actions.
 
 > **Important: Treat the SDK response as the source of truth**
 >

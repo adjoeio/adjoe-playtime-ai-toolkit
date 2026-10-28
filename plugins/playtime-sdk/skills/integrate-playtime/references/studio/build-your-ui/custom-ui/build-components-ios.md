@@ -1,9 +1,9 @@
 # Build the Components
 
-> Use these SwiftUI recipes after fetching campaigns with the
-> [Advanced Custom UI SDK guide](use-sdk-ios.md). They map [SDK Models](../sdk-models.md) to focused
-> components. Keep SDK calls outside visual components and pass the original `PlaytimeCampaign`
-> back to impression, store, and installed-campaign actions.
+Use these SwiftUI recipes after fetching campaigns with the
+[Advanced Custom UI SDK guide](use-sdk-ios.md). They map [SDK Models](../sdk-models.md) to focused
+components. Keep SDK calls outside visual components and pass the original `PlaytimeCampaign`
+back to impression, store, and installed-campaign actions.
 
 > **Important: Treat the SDK response as the source of truth**
 >

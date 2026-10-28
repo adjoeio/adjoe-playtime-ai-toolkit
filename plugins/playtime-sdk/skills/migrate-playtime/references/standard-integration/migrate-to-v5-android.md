@@ -1,6 +1,6 @@
 # Migrate to v5
 
-> Follow this guide to migrate your Catalog integration from v4 to v5.
+Follow this guide to migrate your Catalog integration from v4 to v5.
 
 ---
 

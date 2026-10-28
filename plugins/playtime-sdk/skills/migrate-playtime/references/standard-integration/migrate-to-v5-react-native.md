@@ -1,6 +1,6 @@
 # Migrate to v5
 
-> Follow this guide to migrate a React Native Catalog integration from v4.5.2 to v5. The v5 bridge uses Promise-based methods and separates initialization options from catalog options.
+Follow this guide to migrate a React Native Catalog integration from v4.5.2 to v5. The v5 bridge uses Promise-based methods and separates initialization options from catalog options.
 
 ---
 

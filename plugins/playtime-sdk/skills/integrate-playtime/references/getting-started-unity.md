@@ -1,7 +1,7 @@
 # Get Started
 
-> This guide walks you through adding the Playtime SDK v5 to a Unity project. The Unity
-> package wraps the Android and iOS Playtime SDKs.
+This guide walks you through adding the Playtime SDK v5 to a Unity project. The Unity
+package wraps the Android and iOS Playtime SDKs.
 
 > **Info: Shared Setup**
 >

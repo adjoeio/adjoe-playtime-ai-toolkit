@@ -1,8 +1,8 @@
 # Drop-In UI
 
-> Drop-In UI is the fastest way to add a Playtime Studio placement without building the
-> campaign interface yourself. The Shelf loads and renders campaigns, handles standard
-> campaign actions, records view and click analytics, and reports its lifecycle state.
+Drop-In UI is the fastest way to add a Playtime Studio placement without building the
+campaign interface yourself. The Shelf loads and renders campaigns, handles standard
+campaign actions, records view and click analytics, and reports its lifecycle state.
 
 ## Complete Android Setup
 

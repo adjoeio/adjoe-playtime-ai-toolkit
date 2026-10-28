@@ -1,8 +1,8 @@
 # Use the SDK
 
-> This guide covers the Standard Unity integration flow for displaying the Playtime
-> catalog. The v5 methods are asynchronous and report their result through `onSuccess` and
-> `onError` callbacks, which run on the Unity main thread.
+This guide covers the Standard Unity integration flow for displaying the Playtime
+catalog. The v5 methods are asynchronous and report their result through `onSuccess` and
+`onError` callbacks, which run on the Unity main thread.
 
 Add the namespace to each C# script that uses the SDK. The public API shipped with the
 Unity wrapper at 5.0.0 is the source of truth.

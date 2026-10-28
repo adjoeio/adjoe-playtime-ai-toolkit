@@ -1,8 +1,8 @@
 # Quick-Start Custom UI
 
-> Quick-Start Custom UI combines your Flutter campaign placements with adjoe-managed
-> campaign, offer, and installed-campaign views. The v5 methods return `Future`s; await each
-> operation and handle errors.
+Quick-Start Custom UI combines your Flutter campaign placements with adjoe-managed
+campaign, offer, and installed-campaign views. The v5 methods return `Future`s; await each
+operation and handle errors.
 
 > **Danger: Premium Feature**
 >

@@ -1,10 +1,10 @@
 # Build the Components
 
-> Use these Jetpack Compose recipes after fetching campaigns with the
-> [Advanced Custom UI SDK guide](use-sdk-android.md). They map the fields documented in
-> [SDK Models](../sdk-models.md) to focused UI components. Keep SDK calls such as fetching,
-> impression tracking, and store actions outside reusable visual components, and pass the
-> unmodified `PlaytimeCampaign` back to those actions.
+Use these Jetpack Compose recipes after fetching campaigns with the
+[Advanced Custom UI SDK guide](use-sdk-android.md). They map the fields documented in
+[SDK Models](../sdk-models.md) to focused UI components. Keep SDK calls such as fetching,
+impression tracking, and store actions outside reusable visual components, and pass the
+unmodified `PlaytimeCampaign` back to those actions.
 
 The snippets assume standard Compose imports and an image loader such as Coil's `AsyncImage`.
 

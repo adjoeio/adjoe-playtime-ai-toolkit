@@ -1,6 +1,6 @@
 # Get Started
 
-> This guide walks you through adding the Playtime SDK to your iOS project.
+This guide walks you through adding the Playtime SDK to your iOS project.
 
 > **Info: Shared Setup**
 >

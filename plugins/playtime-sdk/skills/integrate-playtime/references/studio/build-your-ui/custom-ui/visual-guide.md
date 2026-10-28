@@ -1,6 +1,6 @@
 # Visual Guide
 
-> Studio is a dynamic way to build and customize gaming experiences in your app. Our SDK has been optimized and unified so that integrating with iOS, Android, or cross-platform frameworks is easier than ever.
+Studio is a dynamic way to build and customize gaming experiences in your app. Our SDK has been optimized and unified so that integrating with iOS, Android, or cross-platform frameworks is easier than ever.
 
 Below are guidelines for building your own UI. The models are shared across platforms, though there are slight syntax differences when calling SDK methods.
 

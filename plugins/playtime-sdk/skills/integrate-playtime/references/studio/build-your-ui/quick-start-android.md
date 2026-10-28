@@ -1,6 +1,6 @@
 # Quick-Start Custom UI
 
-> Quick-Start Custom UI lets you embed native campaign placements while adjoe handles the detail screen, install flow, and reward tracking. Fetch campaigns, show them in your UI, and open adjoe's managed views when users tap.
+Quick-Start Custom UI lets you embed native campaign placements while adjoe handles the detail screen, install flow, and reward tracking. Fetch campaigns, show them in your UI, and open adjoe's managed views when users tap.
 
 > **Danger: Premium Feature**
 >

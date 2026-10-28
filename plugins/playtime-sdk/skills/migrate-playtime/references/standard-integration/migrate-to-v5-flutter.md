@@ -1,8 +1,8 @@
 # Migrate to v5
 
-> Follow this guide to migrate a Flutter Catalog integration from v4 to v5. Version 5
-> separates initialization options from catalog options and uses explicit asynchronous
-> initialization.
+Follow this guide to migrate a Flutter Catalog integration from v4 to v5. Version 5
+separates initialization options from catalog options and uses explicit asynchronous
+initialization.
 
 ---
 

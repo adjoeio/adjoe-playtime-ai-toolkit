@@ -1,9 +1,9 @@
 # Use the SDK
 
-> This guide covers the SDK operations for an Advanced Custom UI integration: initialize
-> Playtime, fetch campaigns, track impressions, and open new or installed campaigns. The Unity
-> v5 methods use `onSuccess` and `onError` callbacks; handle both. To turn the returned models
-> into UI, continue with [Build the Components](build-components-unity.md).
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize
+Playtime, fetch campaigns, track impressions, and open new or installed campaigns. The Unity
+v5 methods use `onSuccess` and `onError` callbacks; handle both. To turn the returned models
+into UI, continue with [Build the Components](build-components-unity.md).
 
 > **Danger: Premium Feature**
 >

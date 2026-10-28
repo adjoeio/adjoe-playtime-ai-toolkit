@@ -1,8 +1,8 @@
 # Quick-Start Custom UI
 
-> Quick-Start Custom UI lets you render native campaign placements while adjoe handles campaign
-> details and the installed-campaigns view. Campaigns are ranked by eCPM; preserve the order
-> returned by the SDK or Offer API.
+Quick-Start Custom UI lets you render native campaign placements while adjoe handles campaign
+details and the installed-campaigns view. Campaigns are ranked by eCPM; preserve the order
+returned by the SDK or Offer API.
 
 > **Danger: Premium Feature**
 >

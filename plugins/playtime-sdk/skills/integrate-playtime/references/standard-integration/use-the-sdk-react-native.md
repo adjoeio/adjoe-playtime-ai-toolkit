@@ -1,8 +1,8 @@
 # Use the SDK
 
-> This guide covers the Standard React Native integration flow for displaying the
-> Playtime catalog. The v5 bridge is Promise-based, so call its methods with `await` and
-> handle rejected promises.
+This guide covers the Standard React Native integration flow for displaying the
+Playtime catalog. The v5 bridge is Promise-based, so call its methods with `await` and
+handle rejected promises.
 
 Import the types and constants from the package. The declarations shipped with
 `react-native-adjoe-sdk@5.0.0` are the source of truth.

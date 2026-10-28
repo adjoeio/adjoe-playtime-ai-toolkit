@@ -1,6 +1,6 @@
 # Get Started
 
-> This guide walks you through adding the Playtime SDK to your Android project.
+This guide walks you through adding the Playtime SDK to your Android project.
 
 > **Info: Shared Setup**
 >

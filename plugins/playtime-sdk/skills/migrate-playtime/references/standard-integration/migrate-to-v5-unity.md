@@ -1,8 +1,8 @@
 # Migrate to v5
 
-> Follow this guide to migrate a Unity Catalog integration from v4 to v5. Version 5
-> separates initialization options from catalog options and uses explicit asynchronous
-> initialization. The methods keep the `onSuccess` and `onError` callback style.
+Follow this guide to migrate a Unity Catalog integration from v4 to v5. Version 5
+separates initialization options from catalog options and uses explicit asynchronous
+initialization. The methods keep the `onSuccess` and `onError` callback style.
 
 ---
 

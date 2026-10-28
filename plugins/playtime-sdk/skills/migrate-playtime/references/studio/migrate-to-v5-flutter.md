@@ -1,7 +1,7 @@
 # Migrate to v5
 
-> Follow this guide to migrate your Flutter Studio integration from v4 to v5. The methods keep
-> the `Future` and `async`/`await` style.
+Follow this guide to migrate your Flutter Studio integration from v4 to v5. The methods keep
+the `Future` and `async`/`await` style.
 
 ## What's changing
 

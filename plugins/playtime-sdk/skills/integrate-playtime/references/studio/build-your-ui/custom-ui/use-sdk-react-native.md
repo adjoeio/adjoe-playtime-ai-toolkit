@@ -1,10 +1,10 @@
 # Use the SDK
 
-> This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
-> campaigns, track impressions, and open new or installed campaigns. The React Native v5 bridge
-> exposes Promise-based methods; await each operation and handle rejected Promises. To turn the
-> returned models into UI, continue with
-> [Build the Components](build-components-react-native.md).
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
+campaigns, track impressions, and open new or installed campaigns. The React Native v5 bridge
+exposes Promise-based methods; await each operation and handle rejected Promises. To turn the
+returned models into UI, continue with
+[Build the Components](build-components-react-native.md).
 
 > **Danger: Premium Feature**
 >

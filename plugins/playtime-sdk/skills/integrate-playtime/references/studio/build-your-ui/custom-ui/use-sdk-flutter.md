@@ -1,9 +1,9 @@
 # Use the SDK
 
-> This guide covers the SDK operations for an Advanced Custom UI integration: initialize
-> Playtime, fetch campaigns, track impressions, and open new or installed campaigns. The v5
-> methods return `Future`s; await each operation and handle errors. To turn the returned
-> models into UI, continue with [Build the Components](build-components-flutter.md).
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize
+Playtime, fetch campaigns, track impressions, and open new or installed campaigns. The v5
+methods return `Future`s; await each operation and handle errors. To turn the returned
+models into UI, continue with [Build the Components](build-components-flutter.md).
 
 > **Danger: Premium Feature**
 >

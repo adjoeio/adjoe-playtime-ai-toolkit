@@ -1,8 +1,8 @@
 # Use the SDK
 
-> This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
-> campaigns, track impressions, and open new or installed campaigns. To turn the returned models
-> into UI, continue with [Build the Components](build-components-ios.md).
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
+campaigns, track impressions, and open new or installed campaigns. To turn the returned models
+into UI, continue with [Build the Components](build-components-ios.md).
 
 > **Danger: Premium Feature**
 >

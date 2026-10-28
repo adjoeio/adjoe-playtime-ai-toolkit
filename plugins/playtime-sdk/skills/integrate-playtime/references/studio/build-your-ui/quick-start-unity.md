@@ -1,8 +1,8 @@
 # Quick-Start Custom UI
 
-> Quick-Start Custom UI combines your Unity campaign placements with adjoe-managed campaign,
-> offer, and installed-campaign views. The v5 methods are asynchronous and report through
-> `onSuccess` and `onError` callbacks that run on the Unity main thread.
+Quick-Start Custom UI combines your Unity campaign placements with adjoe-managed campaign,
+offer, and installed-campaign views. The v5 methods are asynchronous and report through
+`onSuccess` and `onError` callbacks that run on the Unity main thread.
 
 > **Danger: Premium Feature**
 >

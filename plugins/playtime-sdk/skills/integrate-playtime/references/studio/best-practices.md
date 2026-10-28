@@ -1,12 +1,12 @@
 # Best Practices
 
-> - Call `initPlaytime` as early as possible in your app's lifecycle (e.g., `Application.onCreate` on Android, app launch on iOS). The SDK does not initialize implicitly, and initialization must complete successfully before any other SDK method is called.
-> - Use a **stable, persistent `userId`** for correct reward attribution. If your app has accounts, use the backend user ID. For anonymous users, generate a UUID once and persist it locally. Never use PII (email, phone).
-> - Ensure `sdkHash` matches your adjoe Dashboard configuration exactly — a mismatch prevents initialization.
-> - The backend records `uaNetwork`, `uaChannel`, and `uaCampaignName` independently. Each can change from `null` to its first non-null value. After that, the same value is harmless, but the field cannot change to `null` or a different value. Teardown and re-initialization do not replace recorded backend values.
-> - Keep all string parameters (userId, placement, UA params, extension sub-IDs) URL-safe. Avoid `&`, `=`, `?`, `#`, or spaces.
-
 ## Initialization
+
+- Call `initPlaytime` as early as possible in your app's lifecycle (e.g., `Application.onCreate` on Android, app launch on iOS). The SDK does not initialize implicitly, and initialization must complete successfully before any other SDK method is called.
+- Use a **stable, persistent `userId`** for correct reward attribution. If your app has accounts, use the backend user ID. For anonymous users, generate a UUID once and persist it locally. Never use PII (email, phone).
+- Ensure `sdkHash` matches your adjoe Dashboard configuration exactly — a mismatch prevents initialization.
+- The backend records `uaNetwork`, `uaChannel`, and `uaCampaignName` independently. Each can change from `null` to its first non-null value. After that, the same value is harmless, but the field cannot change to `null` or a different value. Teardown and re-initialization do not replace recorded backend values.
+- Keep all string parameters (userId, placement, UA params, extension sub-IDs) URL-safe. Avoid `&`, `=`, `?`, `#`, or spaces.
 
 ## Performance
 

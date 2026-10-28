@@ -1,7 +1,7 @@
 # Get Started
 
-> This guide walks you through adding the Playtime SDK v5 to a React Native app. The
-> React Native package is a native module that wraps the Android and iOS Playtime SDKs.
+This guide walks you through adding the Playtime SDK v5 to a React Native app. The
+React Native package is a native module that wraps the Android and iOS Playtime SDKs.
 
 > **Info: Shared Setup**
 >

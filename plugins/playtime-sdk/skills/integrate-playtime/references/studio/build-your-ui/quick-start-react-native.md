@@ -1,8 +1,8 @@
 # Quick-Start Custom UI
 
-> Quick-Start Custom UI combines your React Native campaign placements with adjoe-managed campaign,
-> offer, and installed-campaign views. The React Native v5 bridge exposes Promise-based methods;
-> await each operation and handle rejected Promises.
+Quick-Start Custom UI combines your React Native campaign placements with adjoe-managed campaign,
+offer, and installed-campaign views. The React Native v5 bridge exposes Promise-based methods;
+await each operation and handle rejected Promises.
 
 > **Danger: Premium Feature**
 >

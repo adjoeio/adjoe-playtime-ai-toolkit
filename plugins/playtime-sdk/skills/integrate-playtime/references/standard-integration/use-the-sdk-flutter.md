@@ -1,7 +1,7 @@
 # Use the SDK
 
-> This guide covers the Standard Flutter integration flow for displaying the Playtime
-> catalog. The v5 methods return `Future`s, so call them with `await` and handle errors.
+This guide covers the Standard Flutter integration flow for displaying the Playtime
+catalog. The v5 methods return `Future`s, so call them with `await` and handle errors.
 
 Import the SDK entry point and the option and value types from the package. The
 declarations shipped with the `adjoe` package at `v5.0.0` are the source of truth.

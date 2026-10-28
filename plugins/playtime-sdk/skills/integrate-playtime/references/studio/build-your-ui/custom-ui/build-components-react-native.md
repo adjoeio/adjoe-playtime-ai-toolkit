@@ -1,9 +1,9 @@
 # Build the Components
 
-> Use these TypeScript component recipes after fetching campaigns with the
-> [Advanced Custom UI SDK guide](use-sdk-react-native.md). They map [SDK Models](../sdk-models.md) to
-> focused React Native UI. Keep SDK calls outside visual components and retain each unmodified
-> campaign—or its Offer API token and app ID—for tracking and actions.
+Use these TypeScript component recipes after fetching campaigns with the
+[Advanced Custom UI SDK guide](use-sdk-react-native.md). They map [SDK Models](../sdk-models.md) to
+focused React Native UI. Keep SDK calls outside visual components and retain each unmodified
+campaign—or its Offer API token and app ID—for tracking and actions.
 
 > **Important: Treat the SDK response as the source of truth**
 >

@@ -1,8 +1,8 @@
 # SDK Models
 
-> Use the tables on this page to choose the campaign and reward data you need for your custom UI.
-> See your platform's Custom UI guide for SDK methods, impression tracking, and store actions.
-> For SDK-managed campaign details, use the platform-specific Quick-Start Custom UI guide.
+Use the tables on this page to choose the campaign and reward data you need for your custom UI.
+See your platform's Custom UI guide for SDK methods, impression tracking, and store actions.
+For SDK-managed campaign details, use the platform-specific Quick-Start Custom UI guide.
 
 ## Conventions
 

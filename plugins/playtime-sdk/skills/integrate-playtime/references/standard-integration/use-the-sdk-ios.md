@@ -1,6 +1,6 @@
 # Use the SDK
 
-> This guide covers the complete Catalog integration flow for displaying the Playtime catalog in your app.
+This guide covers the complete Catalog integration flow for displaying the Playtime catalog in your app.
 
 ## Initialize the SDK
 

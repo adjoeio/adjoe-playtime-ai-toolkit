@@ -1,8 +1,5 @@
 # Overview
 
-> Playtime Studio embeds adjoe campaigns in your app. Choose an integration path based on
-> how much of the interface and campaign flow you want to build yourself.
-
 > **Danger: Premium Feature**
 >
 > Playtime Studio is a premium feature available by agreement with your adjoe Account Manager. Contact your AM to enable Studio for your account. Enabling Studio is not guaranteed and depends on your app's eligibility.
@@ -12,6 +9,9 @@
 > The platform-specific **Get Started** guide installs and configures the SDK for both
 > Catalog and Studio. Choose your platform from the top bar and complete that guide before
 > continuing here.
+
+Playtime Studio embeds adjoe campaigns in your app. Choose an integration path based on
+how much of the interface and campaign flow you want to build yourself.
 
 ## Choose Your Integration Path
 

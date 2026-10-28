@@ -1,7 +1,7 @@
 # Migrate to v5
 
-> Follow this guide to migrate your Unity Studio integration from v4 to v5. The methods keep
-> the `onSuccess` and `onError` callback style.
+Follow this guide to migrate your Unity Studio integration from v4 to v5. The methods keep
+the `onSuccess` and `onError` callback style.
 
 ## What's changing
 
