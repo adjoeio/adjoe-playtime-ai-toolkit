@@ -19,7 +19,7 @@ or a production build.
 
 ## Check Requirements
 
-- React Native wrapper version 5.0.0-beta.4
+- React Native wrapper version 5.0.0
 - React Native 0.76 or later with Android and iOS native projects
 - Node.js and the React Native toolchain configured for both platforms
 - Android API 21+ and targetSdk 35
@@ -37,7 +37,7 @@ Add the v5 React Native bridge to your project's `package.json`:
 ```json
 {
   "dependencies": {
-    "react-native-adjoe-sdk": "https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0-beta.4"
+    "react-native-adjoe-sdk": "https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0"
   }
 }
 ```
@@ -45,8 +45,8 @@ Add the v5 React Native bridge to your project's `package.json`:
 Alternatively, install it with your package manager:
 
 ```bash
-npm install --save https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0-beta.4
-yarn add https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0-beta.4
+npm install --save https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0
+yarn add https://github.com/adjoeio/adjoe-react-native-sdk#5.0.0
 ```
 
 The v5 package requires React Native 0.76 or later and uses React Native autolinking.
@@ -82,7 +82,7 @@ Add the native Android SDK to `android/app/build.gradle` or
 
 ```kotlin
 dependencies {
-    implementation("io.adjoe:adjoe-sdk-android:5.0.0-beta.4")
+    implementation("io.adjoe:adjoe-sdk-android:5.0.0")
 }
 ```
 
@@ -103,7 +103,7 @@ platform :ios, '14.0'
 
 target 'MyApp' do
   use_frameworks!
-  pod 'PlaytimeSDK', '5.0.0-beta.4'
+  pod 'PlaytimeSDK', '5.0.0'
 end
 ```
 
@@ -149,8 +149,8 @@ Verify the native setup before continuing:
 
 1. Confirm that `react-native-adjoe-sdk` resolves from JavaScript or TypeScript.
 2. Confirm that Android uses API 21 or later, targets API 35, and resolves
-   `io.adjoe:adjoe-sdk-android:5.0.0-beta.4`.
-3. Confirm that iOS resolves `PlaytimeSDK` 5.0.0-beta.4 and opens from the generated
+   `io.adjoe:adjoe-sdk-android:5.0.0`.
+3. Confirm that iOS resolves `PlaytimeSDK` 5.0.0 and opens from the generated
    `.xcworkspace`.
 4. Confirm that the Android build uses only the Android SDK hash and the iOS build uses
    only the iOS SDK hash.

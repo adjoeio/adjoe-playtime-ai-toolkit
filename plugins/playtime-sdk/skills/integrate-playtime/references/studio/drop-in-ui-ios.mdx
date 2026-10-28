@@ -1,9 +1,3 @@
-:::caution[Experimental]
-Drop-In UI is in beta and available for publisher integrations. Public names, integration
-APIs, and layout details may change in future prerelease versions, including breaking
-changes. Review the changelog when upgrading.
-:::
-
 Drop-In UI is the fastest way to add a Playtime Studio placement without building the
 campaign interface yourself. The Shelf loads and renders campaigns, handles standard
 campaign actions, records view and click analytics, and reports its lifecycle state.
@@ -111,7 +105,7 @@ approval.
 Create one controller for each placement and retain it for as long as the placement is in
 use. Create a new controller if its placement or callbacks change.
 
-The Shelf API is experimental in beta.4. Use `@_spi(Experimental) import PlaytimeSDK` in
+The Shelf API is experimental. Use `@_spi(Experimental) import PlaytimeSDK` in
 every source file that references its types.
 
 A placement can have multiple remotely configured Shelf variants. Set `requestedVariant` to
@@ -267,5 +261,5 @@ are intentional, and any action observer receives completed actions.
 
 ## API Reference
 
-See the [iOS Studio SDK reference](https://playtime-api-reference.adjoe.io/monetize/ios/5.0.0-beta.4/studio/index.html)
+See the [iOS Studio SDK reference](https://playtime-api-reference.adjoe.io/monetize/ios/5.0.0/studio/index.html)
 for all experimental Drop-In UI types and method signatures.
