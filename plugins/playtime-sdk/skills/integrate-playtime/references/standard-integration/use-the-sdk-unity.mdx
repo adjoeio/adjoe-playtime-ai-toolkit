@@ -103,6 +103,29 @@ against the `PlaytimeCampaignsState` enum values, such as
 </Step>
 <Step>
 
+## Record the Placement Impression
+
+Call `ExecuteImpressionEvent` every time the button or placement that opens the catalog becomes visible. Call it before `ShowCatalog` so the local impression record is available before the catalog checks it. Analytics delivery stays fire-and-forget, so this does not add network delay. The SDK must be initialized with a user ID before this call.
+
+This required step records how many users see the catalog entry point so you can measure conversion from placement views to catalog opens. Pass the predefined `CatalogPlacement` that describes the entry point, or use `CatalogPlacement.Custom` when none applies.
+
+```csharp
+Playtime.ExecuteImpressionEvent(
+    CatalogPlacement.Navbar,
+    () => Debug.Log("Impression recorded."),
+    error => Debug.Log($"ExecuteImpressionEvent failed: {error.Message}"));
+```
+
+The success callback runs after the impression is recorded locally and does not wait for
+analytics delivery. `ShowCatalog` fails with `IMPRESSION_NOT_EXECUTED` if
+`ExecuteImpressionEvent` has not been called within the previous 30 minutes. Repeated calls
+safely refresh the visibility record while duplicate analytics events are suppressed. The
+placement passed here and the placement in `ShowCatalog` are independent and do not need to
+match.
+
+</Step>
+<Step>
+
 ## Show the Catalog
 
 Pass catalog-specific options to `ShowCatalog`:
@@ -183,9 +206,11 @@ See the [Playtime API Reference](../api-reference.md) for option values and plat
 4. Confirm `GetStatus` reports `IsInitialized` and the intended user ID.
 5. Use `Details.CampaignsAvailable` as the primary availability signal.
 6. Inspect `Details.CampaignsState` when campaigns are unavailable.
-7. Pass only presentation fields in the catalog options.
-8. Prevent duplicate catalog presentations while a launch is in progress.
-9. Handle every `PlaytimeException` and retry only retryable failures.
-10. Call `Teardown` on logout and initialize again before the next use.
-11. Test initialization, status, catalog presentation, errors, and teardown on physical
-    Android and iOS builds.
+7. Call `ExecuteImpressionEvent` every time the catalog entry point becomes visible.
+8. Record the impression before opening the catalog so `ShowCatalog` does not fail with `IMPRESSION_NOT_EXECUTED`.
+9. Pass only presentation fields in the catalog options.
+10. Prevent duplicate catalog presentations while a launch is in progress.
+11. Handle every `PlaytimeException` and retry only retryable failures.
+12. Call `Teardown` on logout and initialize again before the next use.
+13. Test initialization, status, impression refresh, catalog presentation, errors, and
+    teardown on physical Android and iOS builds.

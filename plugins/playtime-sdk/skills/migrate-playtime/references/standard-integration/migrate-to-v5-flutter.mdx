@@ -79,10 +79,12 @@ visible, before calling `showCatalog`.
 **Before (v4):**
 
 ```dart
-await Playtime.showCatalogWithOptions(PlaytimeParams(
-  placement: 'navbar',
-  uaNetwork: 'network',
-  uaChannel: 'channel',
+await Playtime.showCatalogWithOptions(PlaytimeOptions(
+  params: PlaytimeParams(
+    placement: 'navbar',
+    uaNetwork: 'network',
+    uaChannel: 'channel',
+  ),
 ));
 ```
 

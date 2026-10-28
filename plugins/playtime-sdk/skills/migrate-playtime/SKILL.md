@@ -1,6 +1,6 @@
 ---
 name: migrate-playtime
-description: Migrate an existing adjoe Playtime SDK v4 Standard Catalog or Studio implementation to v5 for iOS, Android, or React Native. Use when a user asks to upgrade or migrate the Playtime SDK from v4 to v5, or mentions deprecated Playtime APIs, setPlaytimeOptions, initPlaytime, PlaytimeCatalog, or PlaytimeStudio.
+description: Migrate an existing adjoe Playtime SDK v4 Standard Catalog or Studio implementation to v5 for iOS, Android, React Native, Flutter, or Unity. Use when a user asks to upgrade or migrate the Playtime SDK from v4 to v5, or mentions deprecated Playtime APIs, setPlaytimeOptions, initPlaytime, PlaytimeCatalog, or PlaytimeStudio.
 ---
 
 # migrate-playtime: Playtime SDK migration

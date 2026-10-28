@@ -1,6 +1,6 @@
 ---
 name: integrate-playtime
-description: Integrate the adjoe Playtime SDK into a new or existing iOS, Android, or React Native app. Use when a user asks to add Playtime, an adjoe offerwall, a Standard Catalog, Playtime Studio, native game placements, reward campaigns.
+description: Integrate the adjoe Playtime SDK into a new or existing iOS, Android, React Native, Flutter, or Unity app. Use when a user asks to add Playtime, an adjoe offerwall, a Standard Catalog, Playtime Studio, native game placements, reward campaigns.
 ---
 
 # integrate-playtime: Playtime SDK integration
@@ -16,7 +16,7 @@ The canonical technical guidance is in the linked Playtime SDK documentation. Do
 
 Available as `$ARGUMENTS` when invoked as a slash command:
 
-- `platform` (optional): `ios`, `android`, or `react-native`.
+- `platform` (optional): `ios`, `android`, `react-native`, `flutter`, or `unity`.
 - `integration_type` (optional): `standard-catalog` or `studio`.
 - `studio_ui` (optional): `quick-start`, `drop-in`, or `custom`. Required only for Playtime Studio.
 
@@ -25,10 +25,12 @@ Available as `$ARGUMENTS` when invoked as a slash command:
 Inspect the working directory first. Select the **outermost project that owns the build**, using the first matching rule below:
 
 1. **React Native** — root `package.json` includes `react-native` or `react-native-adjoe-sdk`.
-2. **Android** — a root or app-module `build.gradle` / `build.gradle.kts` applies `com.android.application`.
-3. **iOS** — root `Package.swift`, `Podfile`, `.xcodeproj`, or `.xcworkspace` exists.
+2. **Flutter** — root `pubspec.yaml` includes the `adjoe` package or the Flutter SDK.
+3. **Unity** — a Unity project with the Playtime files under `Assets/Adjoe`.
+4. **Android** — a root or app-module `build.gradle` or `build.gradle.kts` applies `com.android.application`.
+5. **iOS** — root `Package.swift`, `Podfile`, `.xcodeproj`, or `.xcworkspace` exists.
 
-If a React Native wrapper contains native folders, select React Native. If the project is Flutter or Unity, explain that this integration skill does not yet support it. If multiple independent top-level apps match, or no platform can be detected, ask the user which platform to integrate before reading a platform-specific guide.
+If a React Native, Flutter, or Unity project contains `ios/` and `android/` folders, select the wrapper platform. If multiple independent top-level apps match, or no platform can be detected, ask the user which platform to integrate before reading a platform-specific guide.
 
 State the detected platform and the evidence used. Do not change project files until the platform is unambiguous.
 

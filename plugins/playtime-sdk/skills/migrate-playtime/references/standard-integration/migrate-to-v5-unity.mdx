@@ -67,7 +67,9 @@ The Unity `InitOptions` does not expose a `country` field.
 
 In v4, placement and user-acquisition values were passed to `ShowCatalogWithOptions` or
 `SetUAParams` through `PlaytimeOptions` and `PlaytimeParams`. In v5, UA fields move to
-`InitOptions` and placement moves to `CatalogOptions`.
+`InitOptions` and placement moves to `CatalogOptions`. v5 also adds a required
+`ExecuteImpressionEvent` call: run it every time the catalog entry point becomes visible,
+before calling `ShowCatalog`.
 
 **Before (v4):**
 
@@ -81,6 +83,11 @@ Playtime.ShowCatalogWithOptions(
 **After (v5):**
 
 ```csharp
+Playtime.ExecuteImpressionEvent(
+    CatalogPlacement.Navbar,
+    () => Debug.Log("Impression recorded."),
+    error => Debug.Log(error.Message));
+
 CatalogOptions catalogOptions = new CatalogOptions()
     .SetPlacement(CatalogPlacement.Navbar)
     .SetCategory(AppCategory.GAMING);
@@ -90,6 +97,16 @@ Playtime.ShowCatalog(
     () => Debug.Log("Catalog launched."),
     error => Debug.Log(error.Message));
 ```
+
+`ExecuteImpressionEvent` measures how many users see the catalog entry point and the
+conversion from a placement view to a catalog open. Pass the predefined `CatalogPlacement`
+that describes the entry point, or use `CatalogPlacement.Custom` when none applies. Call it
+before `ShowCatalog` so the local impression record is ready. Analytics delivery stays
+fire-and-forget and does not add network delay. `ShowCatalog` fails with
+`IMPRESSION_NOT_EXECUTED` if no impression call was made within the previous 30 minutes.
+Repeated calls safely refresh the visibility record while duplicate analytics events are
+suppressed. The impression placement and the placement passed to `ShowCatalog` are
+independent and do not need to match.
 
 Keep the launch button disabled while the catalog is being presented.
 
@@ -186,13 +203,14 @@ void OnError(PlaytimeException error)
 4. Account for the anonymous session-start event sent five seconds after app start.
 5. Move UA fields to `InitOptions` and placement to `CatalogOptions`; `PlaytimeParams` and `SetUAParams` are removed.
 6. Set each UA field with its intended first non-null value; later initialization or teardown cannot replace it.
-7. Replace `ShowCatalogWithOptions` with `ShowCatalog(CatalogOptions)`.
-8. Use the v5 placement values and provide the catalog category.
-9. Replace individual getters with `GetStatus`.
-10. Read `PlaytimeException` fields in `onError` and retry only retryable failures.
-11. Confirm Android SDK 5.0.0 resolution and `PlaytimeSDK` 5.0.0 pod resolution.
-12. Confirm iOS App Attest uses the `production` environment for Debug and Release builds.
-13. Rebuild new Android and iOS player targets, then test initialization, `GetStatus`, the catalog, and `Teardown`.
+7. Call `ExecuteImpressionEvent` every time the catalog entry point becomes visible, before `ShowCatalog`.
+8. Replace `ShowCatalogWithOptions` with `ShowCatalog(CatalogOptions)`.
+9. Use the v5 placement values and provide the catalog category.
+10. Replace individual getters with `GetStatus`.
+11. Read `PlaytimeException` fields in `onError` and retry only retryable failures.
+12. Confirm Android SDK 5.0.0 resolution and `PlaytimeSDK` 5.0.0 pod resolution.
+13. Confirm iOS App Attest uses the `production` environment for Debug and Release builds.
+14. Rebuild new Android and iOS player targets, then test initialization, `GetStatus`, the catalog, and `Teardown`.
 
 ---
 
