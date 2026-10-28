@@ -1,0 +1,191 @@
+This guide covers the Standard Unity integration flow for displaying the Playtime
+catalog. The v5 methods are asynchronous and report their result through `onSuccess` and
+`onError` callbacks, which run on the Unity main thread.
+
+<AiToolkit />
+
+Add the namespace to each C# script that uses the SDK. The public API shipped with the
+Unity wrapper at 5.0.0 is the source of truth.
+
+```csharp
+using io.adjoe.sdk;
+```
+
+:::note[Editor builds]
+The SDK methods do not run in the Unity editor; they log a message and return. Test on a
+physical Android or iOS build.
+:::
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Initialize the SDK early so it can fetch campaign data. Select the SDK hash for the
+current native platform; never reuse a hash from another application or platform.
+
+<InitializationBehavior />
+
+```csharp
+using io.adjoe.sdk;
+
+string sdkHash;
+#if UNITY_ANDROID
+sdkHash = "YOUR_ANDROID_SDK_HASH";
+#elif UNITY_IOS
+sdkHash = "YOUR_IOS_SDK_HASH";
+#endif
+
+InitOptions options = new InitOptions()
+    .SetSdkHash(sdkHash)
+    .SetUserId("user_123");
+
+Playtime.InitPlaytime(
+    options,
+    () => Debug.Log("Playtime initialized."),
+    error => Debug.Log($"Init failed: {error.Message}"));
+```
+
+`UserId` is required before displaying the catalog. If the user is not known at app
+startup, initialize again with the user ID after login and before calling `ShowCatalog`.
+
+Optional profile and extension data use the exported value types:
+
+```csharp
+InitOptions options = new InitOptions()
+    .SetSdkHash(sdkHash)
+    .SetUserId("user_123")
+    .SetUserProfile(new PlaytimeUserProfile()
+        .SetGender(PlaytimeGender.FEMALE)
+        .SetBirthday("1990-05-15"))
+    .SetExtensions(new PlaytimeExtensions()
+        .SetSubId1("partner_user_123"))
+    .SetLanguage("en")
+    .SetUaNetwork("network")
+    .SetUaChannel("channel")
+    .SetUaCampaignName("campaign");
+```
+
+`SetExtensions` supports `SetSubId1` through `SetSubId5`. Profile birthdays accept a
+calendar date or an ISO 8601 string.
+
+### InitOptions Parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Check SDK Status
+
+Use `GetStatus` after initialization to verify that campaigns are available:
+
+```csharp
+Playtime.GetStatus(
+    status =>
+    {
+        if (status.IsInitialized && status.Details.CampaignsAvailable)
+        {
+            // The catalog can be shown.
+        }
+    },
+    error => Debug.Log($"GetStatus failed: {error.Message}"));
+```
+
+An initialized SDK can still report no campaigns because of targeting, app
+configuration, device eligibility, or temporary inventory. Use the typed values in
+`status.Details.CampaignsState` to determine why campaigns are unavailable. Compare
+against the `PlaytimeCampaignsState` enum values, such as
+`PlaytimeCampaignsState.VPN_DETECTED`, instead of comparing strings.
+
+<StatusExplanation />
+
+</Step>
+<Step>
+
+## Show the Catalog
+
+Pass catalog-specific options to `ShowCatalog`:
+
+```csharp
+CatalogOptions options = new CatalogOptions()
+    .SetPlacement(CatalogPlacement.Navbar)
+    .SetCategory(AppCategory.GAMING);
+
+Playtime.ShowCatalog(
+    options,
+    () => Debug.Log("Catalog launched."),
+    error => Debug.Log($"ShowCatalog failed: {error.Message}"));
+```
+
+Keep the launch button disabled while the native catalog is being presented to prevent
+duplicate presentations.
+
+### CatalogOptions Parameters
+
+<CatalogOptionsTable />
+
+</Step>
+<Step>
+
+## Handle Errors
+
+Every method reports failures through its `onError` callback with a `PlaytimeException`:
+
+```csharp
+void OnError(PlaytimeException error)
+{
+    Debug.Log($"{error.ErrorType} {error.Code} {error.Message}");
+    // Retry only when error.IsRetryable is true.
+}
+```
+
+Retry only when `IsRetryable` is `true`. Ask the user to disable a VPN for
+`PlaytimeErrorType.NETWORK_VPN`; verify integration options for
+`PlaytimeErrorType.SDK_CONFIG`; and report persistent
+`PlaytimeErrorType.RESPONSE_FORMAT` or `PlaytimeErrorType.UNKNOWN` errors to adjoe.
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+Release SDK state when the current user signs out or when you need to reset the
+integration:
+
+```csharp
+Playtime.Teardown(
+    () => Debug.Log("Teardown complete."),
+    error => Debug.Log($"Teardown failed: {error.Message}"));
+```
+
+<TeardownNote />
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+## API Reference
+
+See the [Playtime API Reference](../api-reference.md) for option values and platform API links.
+
+## Verification Checklist
+
+1. Use the Android and iOS SDK hashes only in their corresponding native builds.
+2. Wait for the `InitPlaytime` success callback before calling another SDK method.
+3. Initialize again with `UserId` if it was unavailable at app startup.
+4. Confirm `GetStatus` reports `IsInitialized` and the intended user ID.
+5. Use `Details.CampaignsAvailable` as the primary availability signal.
+6. Inspect `Details.CampaignsState` when campaigns are unavailable.
+7. Pass only presentation fields in the catalog options.
+8. Prevent duplicate catalog presentations while a launch is in progress.
+9. Handle every `PlaytimeException` and retry only retryable failures.
+10. Call `Teardown` on logout and initialize again before the next use.
+11. Test initialization, status, catalog presentation, errors, and teardown on physical
+    Android and iOS builds.

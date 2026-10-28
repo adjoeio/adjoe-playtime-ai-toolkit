@@ -1,0 +1,224 @@
+Follow this guide to migrate a Flutter Catalog integration from v4 to v5. Version 5
+separates initialization options from catalog options and uses explicit asynchronous
+initialization.
+
+---
+
+## 1. Dependency Changes
+
+Update the Git dependency in `pubspec.yaml` to version 5.0.0:
+
+```yaml
+dependencies:
+  adjoe:
+    git:
+      url: https://github.com/adjoeio/adjoe-flutter-sdk
+      ref: v5.0.0
+```
+
+Fetch the package and update the native dependencies as described in
+[Get Started](../getting-started-flutter.mdx). Confirm that Android resolves
+`io.adjoe:adjoe-sdk-android:5.0.0` and iOS resolves `PlaytimeSDK` 5.0.0. Run
+`flutter clean`, then rebuild both native apps; a Dart hot reload does not install the new
+native code.
+
+The public entry point moved from `package:adjoe/adjoe.dart` to `package:adjoe/sdk.dart`.
+
+```dart
+
+```
+
+---
+
+## 2. Initialization
+
+Initialize Playtime as early as possible in the app lifecycle and wait for initialization
+to complete successfully before calling any other SDK method.
+
+Replace the v4 `Playtime.setPlaytimeOptions(PlaytimeOptions)` call with
+`Playtime.initPlaytime(InitOptions)`. The SDK hash moves from `PlaytimeOptions` onto
+`InitOptions`, and the returned `Future` must complete before you call any other SDK method.
+
+**Before (v4):**
+
+```dart
+await Playtime.setPlaytimeOptions(PlaytimeOptions(
+  sdkHash: 'YOUR_SDK_HASH',
+  userId: 'user_123',
+));
+```
+
+**After (v5):**
+
+```dart
+await Playtime.initPlaytime(InitOptions(
+  sdkHash: 'YOUR_SDK_HASH',
+  userId: 'user_123',
+  country: 'DE',
+));
+```
+
+At app start, v5 waits five seconds and then sends a lightweight session-start event for
+reporting. The event contains no personal user data and identifies only an anonymous
+user. It does not initialize or create a Playtime user.
+
+`country` is an optional ISO 3166-1 alpha-2 code used to map a user to their reward
+currency. Set it only when your integration supports multiple currencies, and set it only
+once per user because the backend does not accept replacements. The SDK trims and
+uppercases the value. Invalid non-empty values cause initialization to fail.
+
+---
+
+## 3. Show Catalog
+
+In v4, user-acquisition and placement values were passed to `showCatalogWithOptions` through
+a `PlaytimeParams` object. In v5, UA fields move to `InitOptions` and placement moves to
+`CatalogOptions`. Call `executeImpressionEvent` every time the catalog entry point becomes
+visible, before calling `showCatalog`.
+
+**Before (v4):**
+
+```dart
+await Playtime.showCatalogWithOptions(PlaytimeParams(
+  placement: 'navbar',
+  uaNetwork: 'network',
+  uaChannel: 'channel',
+));
+```
+
+**After (v5):**
+
+```dart
+await Playtime.executeImpressionEvent(CatalogPlacement.navbar);
+
+await Playtime.showCatalog(CatalogOptions(
+  placement: CatalogPlacement.navbar,
+  category: AppCategory.gaming,
+));
+```
+
+`executeImpressionEvent` measures how many users see the catalog entry point and the
+conversion from a placement view to a catalog open. Pass the predefined `CatalogPlacement`
+that describes the entry point, or use `CatalogPlacement.custom` when none applies. Await
+it before `showCatalog` so the local impression record is ready. Analytics delivery
+remains fire-and-forget and does not add network delay. `showCatalog` fails if no
+impression call was made within the previous 30 minutes. Repeated calls safely refresh the
+visibility record while duplicate analytics events are suppressed. The impression
+placement and the placement passed to `showCatalog` are independent and do not need to
+match.
+
+---
+
+## 4. Options Restructuring
+
+The v4 `PlaytimeOptions` and `PlaytimeParams` objects mixed SDK identity, user
+acquisition, and catalog presentation fields. In v5, split them into two calls:
+
+| v4 field                                       | v5 location                      |
+| ---------------------------------------------- | -------------------------------- |
+| `sdkHash`, `userId`                            | `Playtime.initPlaytime(options)` |
+| `language`, user profile, extensions           | `Playtime.initPlaytime(options)` |
+| `uaNetwork`, `uaChannel` (`PlaytimeParams`)    | `Playtime.initPlaytime(options)` |
+| `placement`, `promotionTag` (`PlaytimeParams`) | `Playtime.showCatalog(options)`  |
+
+`PlaytimeParams` is removed entirely. All UA parameters now belong to the initialization
+options. Placement belongs to the catalog options.
+
+Each UA field transitions independently from null to its first non-null value. Once the
+backend records a non-null value for a field, it cannot be cleared or changed. Later
+`initPlaytime` calls, including calls after `teardown`, do not replace it.
+
+`uaCampaignName` replaces the v4 `uaSubPublisherEncrypted` value; the v4
+`uaSubPublisherCleartext` has no v5 replacement.
+
+---
+
+## 5. Type-Safe Placements
+
+Use the predefined `CatalogPlacement` getters included with v5. You can also pass a custom
+value through `CatalogPlacement.custom`.
+
+```dart
+await Playtime.showCatalog(CatalogOptions(
+  placement: CatalogPlacement.navbar,
+  category: AppCategory.gaming,
+));
+```
+
+---
+
+## 6. Status
+
+v4 Flutter already exposed `getStatus()`. v5 keeps the single awaitable call and returns the
+same shape you read in v4, so continue reading everything from one status object rather than
+separate getters:
+
+| Value             | v5 access                                    |
+| ----------------- | -------------------------------------------- |
+| User ID           | `(await Playtime.getStatus()).userId`        |
+| SDK version       | `(await Playtime.getStatus()).version`       |
+| Initialized flag  | `(await Playtime.getStatus()).isInitialized` |
+| TOS accepted flag | `(await Playtime.getStatus()).isTosAccepted` |
+
+Fetch the status once when reading multiple values:
+
+```dart
+final status = await Playtime.getStatus();
+final userId = status.userId;
+final version = status.version;
+```
+
+---
+
+## 7. Error Handling
+
+Rejected native calls surface as a Dart `PlatformException`. Catch it and read the
+structured values from `e.details`:
+
+```dart
+
+try {
+  await Playtime.showCatalog(CatalogOptions(
+    placement: CatalogPlacement.navbar,
+    category: AppCategory.gaming,
+  ));
+} on PlatformException catch (e) {
+  final details = e.details as Map?;
+  final errorType = details?['errorType'] as String?;
+  final isRetryable = (details?['isRetryable'] as bool?) ?? false;
+  // Retry only when isRetryable is true.
+}
+```
+
+---
+
+## Complete option migration reference
+
+<V5OptionMigration />
+
+### InitOptions
+
+<InitOptionsTable />
+
+### CatalogOptions
+
+<CatalogOptionsTable />
+
+## Migration Checklist
+
+1. Update the `adjoe` Git dependency to `v5.0.0` and change the import to `package:adjoe/sdk.dart`.
+2. Replace `Playtime.setPlaytimeOptions(PlaytimeOptions)` with `Playtime.initPlaytime(InitOptions)`.
+3. Wait for `initPlaytime` to complete before calling other SDK methods.
+4. Account for the anonymous session-start event sent five seconds after app start.
+5. Call `executeImpressionEvent` every time the catalog entry point becomes visible.
+6. Move UA fields to `InitOptions` and placement to `CatalogOptions`; `PlaytimeParams` is removed.
+7. Set each UA field with its intended first non-null value; later initialization or teardown cannot replace it.
+8. Use the v5 placement getters and provide the catalog category.
+9. Replace individual status getters with `await Playtime.getStatus()`.
+10. Catch `PlatformException` and retry only retryable failures.
+11. Confirm Android SDK 5.0.0 resolution and `PlaytimeSDK` 5.0.0 pod resolution.
+12. Confirm iOS App Attest uses the `production` environment for Debug and Release builds.
+13. Rebuild new Android and iOS binaries, then test initialization, `getStatus()`, the catalog, and `teardown()`.
+
+---
+

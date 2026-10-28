@@ -1,0 +1,302 @@
+Quick-Start Custom UI combines your Unity campaign placements with adjoe-managed campaign,
+offer, and installed-campaign views. The v5 methods are asynchronous and report through
+`onSuccess` and `onError` callbacks that run on the Unity main thread.
+
+<AiToolkit />
+
+:::danger[Premium Feature]
+Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+Contact your AM to enable Studio and obtain separate Android and iOS SDK hashes.
+:::
+
+Add the Studio namespace alongside the core namespace:
+
+```csharp
+using io.adjoe.sdk;
+using io.adjoe.sdk.studio;
+```
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Complete [Unity setup](../../getting-started-unity.mdx), then initialize with the SDK hash
+for the current platform. Never use the Android hash in an iOS build or the iOS hash in an
+Android build.
+
+<InitializationBehavior />
+
+```csharp
+InitOptions options = new InitOptions()
+    .SetSdkHash("YOUR_PLATFORM_SDK_HASH")
+    .SetUserId("user_123");
+
+Playtime.InitPlaytime(
+    options,
+    () => Debug.Log("Playtime initialized."),
+    error => Debug.Log(error.Message));
+```
+
+### InitOptions parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Manage TOS Consent
+
+<StudioTosConsent />
+
+```csharp
+PlaytimeStudio.UpdateTosConsent(
+    TosConsentAction.ACCEPT,
+    () => Debug.Log("Consent accepted."),
+    error => Debug.Log(error.Message));
+
+// If the user later withdraws consent:
+PlaytimeStudio.UpdateTosConsent(
+    TosConsentAction.WITHDRAW,
+    () => Debug.Log("Consent withdrawn."),
+    error => Debug.Log(error.Message));
+```
+
+</Step>
+<Step>
+
+## Request Usage Permission (Android Only)
+
+Android usage access enables time-based campaigns and play-duration measurement. Request it
+after clear user intent and guard the Android-only API. iOS has no usage-access prompt and
+does not support Android time-based rewards.
+
+```csharp
+#if UNITY_ANDROID
+Playtime.GetStatus(
+    status =>
+    {
+        if (status.IsUsagePermissionAccepted != true)
+        {
+            PlaytimeStudio.ShowPermissionsPrompt(
+                () => Debug.Log("Prompt shown."),
+                error => Debug.Log(error.Message));
+        }
+    },
+    error => Debug.Log(error.Message));
+#endif
+```
+
+Users without usage access can still receive other eligible campaign and reward types.
+
+</Step>
+<Step>
+
+## Get SDK Campaigns or Offer API Campaigns
+
+Build campaign cards from [SDK Models](./sdk-models.md). For a full publisher-built
+experience, see the [Advanced Custom UI Visual Guide](./custom-ui/visual-guide.md). Preserve
+the returned order and pass unmodified campaign objects to later SDK calls.
+
+### SDK Campaigns
+
+Check availability, then fetch campaigns for your placement. Preserve the returned order.
+
+```csharp
+CampaignOptions options = new CampaignOptions()
+    .SetPlacement(StudioPlacement.Navbar)
+    .SetCategory(AppCategory.GAMING);
+
+PlaytimeStudio.GetCampaigns(
+    options,
+    response =>
+    {
+        PlaytimeCampaign[] campaigns = response.Campaigns;
+    },
+    error => Debug.Log(error.Message));
+```
+
+### Offer API Campaigns
+
+Select offers on your backend, then enrich their tokens with SDK models. Keep each Offer API
+token and app ID associated with its enriched campaign model. Keep Offer API credentials and
+server-side API tokens out of the app. An SDK campaign-availability check is not required for
+this route because the Offer API handles eligibility.
+
+```csharp
+PlaytimeStudio.GetOfferDetails(
+    new[] { "token_from_offer_api" },
+    options,
+    response =>
+    {
+        PlaytimeCampaign[] campaigns = response.Campaigns;
+    },
+    error => Debug.Log(error.Message));
+```
+
+See [Offer API](./offer-api.mdx) for the server-side request and token flow.
+
+<CampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Track the Qualifying Default View
+
+After retrieval, report a default impression when the entire campaign card is visible in the
+viewport. The SDK handles deduplication. This view qualifies the later store interaction.
+
+For a campaign selected by the SDK and returned by `GetCampaigns`:
+
+```csharp
+PlaytimeStudio.ExecuteCampaignImpression(
+    campaign,
+    PlaytimeImpressionType.DEFAULT,
+    () => Debug.Log("Impression recorded."),
+    error => Debug.Log(error.Message));
+```
+
+For a campaign selected by the Offer API, including one enriched by `GetOfferDetails`:
+
+```csharp
+PlaytimeStudio.ExecuteOfferImpression(
+    "token_from_offer_api",
+    "app_id_from_offer_api",
+    () => Debug.Log("Impression recorded."),
+    error => Debug.Log(error.Message));
+```
+
+</Step>
+<Step>
+
+## Open Managed Campaign or Offer Details
+
+Open adjoe's managed details when the user selects a visible card:
+
+```csharp
+// Campaign selected by the SDK:
+PlaytimeStudio.ShowCampaignDetails(
+    campaign,
+    () => Debug.Log("Details shown."),
+    error => Debug.Log(error.Message));
+
+// Retained identifiers for a campaign selected by the Offer API:
+PlaytimeStudio.ShowOfferDetails(
+    "token_from_offer_api",
+    "app_id_from_offer_api",
+    () => Debug.Log("Details shown."),
+    error => Debug.Log(error.Message));
+```
+
+These managed details flows report the engaged impression automatically. Do not send a
+manual engaged impression when opening them.
+
+</Step>
+<Step>
+
+## Get Installed Campaigns and Open the Managed View
+
+Fetch installed campaigns to render a compact in-progress placement. Refresh after the app
+returns from the store and whenever the view regains focus so reward progress is current.
+
+```csharp
+InstalledCampaignOptions installedOptions = new InstalledCampaignOptions()
+    .SetCategory(AppCategory.GAMING);
+
+PlaytimeStudio.GetInstalledCampaigns(
+    installedOptions,
+    response =>
+    {
+        PlaytimeCampaign[] installedCampaigns = response.Campaigns;
+    },
+    error => Debug.Log(error.Message));
+
+PlaytimeStudio.ShowInstalledCampaigns(
+    () => Debug.Log("Installed view shown."),
+    error => Debug.Log(error.Message));
+```
+
+Use [SDK Models](./sdk-models.md) for installed status, completed rewards, reward totals,
+expiration, and milestone fields. The managed installed-campaign view handles the full
+progress experience.
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Open Chatbot (Optional)
+
+Open support for a campaign, or omit the campaign for general support:
+
+```csharp
+PlaytimeStudio.OpenChatbot(
+    campaign,
+    () => Debug.Log("Chatbot opened."),
+    error => Debug.Log(error.Message));
+
+PlaytimeStudio.OpenChatbot(
+    () => Debug.Log("Chatbot opened."),
+    error => Debug.Log(error.Message));
+```
+
+</Step>
+<Step>
+
+## Check Status and Handle Errors
+
+Use `Details.CampaignsAvailable` as the primary signal for whether to show SDK campaigns.
+
+```csharp
+Playtime.GetStatus(
+    status =>
+    {
+        if (status.IsInitialized && status.Details.CampaignsAvailable)
+        {
+            // Campaigns can be shown.
+        }
+    },
+    error => Debug.Log(error.Message));
+```
+
+<StatusExplanation />
+
+Every method reports failures through its `onError` callback with a structured
+`PlaytimeException`. Use `IsRetryable` to decide whether to retry and retain the
+categorized error for diagnostics.
+
+```csharp
+PlaytimeStudio.GetCampaigns(
+    options,
+    response => { /* ... */ },
+    error => Debug.Log($"{error.ErrorType} {error.Code} {error.IsRetryable} {error.Message}"));
+```
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown
+
+```csharp
+Playtime.Teardown(
+    () => Debug.Log("Teardown complete."),
+    error => Debug.Log(error.Message));
+```
+
+<TeardownNote />
+
+On Android, campaign operations resolve current campaign objects through an internal cache
+keyed by `campaignUUID`. Do not construct campaign objects manually or reuse stale objects
+after teardown; initialize again and fetch fresh campaigns.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>

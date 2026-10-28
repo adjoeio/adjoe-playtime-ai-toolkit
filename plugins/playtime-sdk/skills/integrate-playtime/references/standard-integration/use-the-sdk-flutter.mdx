@@ -1,0 +1,202 @@
+This guide covers the Standard Flutter integration flow for displaying the Playtime
+catalog. The v5 methods return `Future`s, so call them with `await` and handle errors.
+
+<AiToolkit />
+
+Import the SDK entry point and the option and value types from the package. The
+declarations shipped with the `adjoe` package at `v5.0.0` are the source of truth.
+
+```dart
+
+```
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Initialize the SDK early so it can fetch campaign data. Select the SDK hash for the
+current native platform; never reuse a hash from another application or platform.
+
+<InitializationBehavior />
+
+```dart
+import 'dart:io' show Platform;
+
+final sdkHash = Platform.isAndroid
+    ? 'YOUR_ANDROID_SDK_HASH'
+    : 'YOUR_IOS_SDK_HASH';
+
+await Playtime.initPlaytime(InitOptions(
+  sdkHash: sdkHash,
+  userId: 'user_123',
+));
+```
+
+`userId` is required before displaying the catalog. If the user is not known at app
+startup, initialize again with the user ID after login and before calling `showCatalog`.
+
+Optional profile and extension data use the exported value types:
+
+```dart
+final options = InitOptions(
+  sdkHash: sdkHash,
+  userId: 'user_123',
+  userProfile: PlaytimeUserProfile(
+    gender: PlaytimeGender.FEMALE,
+    birthday: '1990-05-15',
+  ),
+  extensions: PlaytimeExtensions(
+    subId1: 'partner_user_123',
+  ),
+  language: 'en',
+  country: 'DE',
+  uaNetwork: 'network',
+  uaChannel: 'channel',
+  uaCampaignName: 'campaign',
+);
+
+await Playtime.initPlaytime(options);
+```
+
+`extensions` supports `subId1` through `subId5`. Profile birthdays accept a calendar date
+or an ISO 8601 string.
+
+### InitOptions Parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Check SDK Status
+
+Use `getStatus()` after initialization to verify that campaigns are available:
+
+```dart
+final status = await Playtime.getStatus();
+
+if (status.isInitialized && status.details.campaignsAvailable) {
+  // The catalog can be shown.
+}
+```
+
+An initialized SDK can still report no campaigns because of targeting, app
+configuration, device eligibility, or temporary inventory. Use the typed values in
+`status.details.campaignsState` to determine why campaigns are unavailable. Compare
+against the `PlaytimeCampaignsState` enum values, such as
+`PlaytimeCampaignsState.VPN_DETECTED`, instead of comparing strings.
+
+<StatusExplanation />
+
+</Step>
+<Step>
+
+## Record the Placement Impression
+
+Call `executeImpressionEvent` every time the button or placement that opens the catalog becomes visible. Await it before `showCatalog` so the local impression record is available before the catalog checks it. Analytics delivery remains fire-and-forget, so this does not add network delay.
+
+This required step records how many users see the catalog entry point so you can measure conversion from placement views to catalog opens. Pass the predefined `CatalogPlacement` that describes the entry point, or use `CatalogPlacement.custom` when none applies.
+
+```dart
+await Playtime.executeImpressionEvent(CatalogPlacement.navbar);
+```
+
+The call resolves after the impression is recorded locally and does not wait for
+analytics delivery. `showCatalog` fails if `executeImpressionEvent` has not been called
+within the previous 30 minutes. Repeated calls safely refresh the visibility record
+while duplicate analytics events are suppressed. The placement passed here and the
+placement in `showCatalog` are independent and do not need to match.
+
+</Step>
+<Step>
+
+## Show the Catalog
+
+Pass catalog-specific options to `showCatalog`:
+
+```dart
+await Playtime.showCatalog(CatalogOptions(
+  placement: CatalogPlacement.navbar,
+  category: AppCategory.gaming,
+));
+```
+
+Keep the launch button disabled while the native catalog is being presented to prevent
+duplicate presentations.
+
+### CatalogOptions Parameters
+
+<CatalogOptionsTable />
+
+</Step>
+<Step>
+
+## Handle Errors
+
+Rejected native calls surface as a Dart `PlatformException`. Catch it and read the
+structured values from `e.details`:
+
+```dart
+
+try {
+  await Playtime.showCatalog(CatalogOptions(
+    placement: CatalogPlacement.navbar,
+    category: AppCategory.gaming,
+  ));
+} on PlatformException catch (e) {
+  final details = e.details as Map?;
+  final errorType = details?['errorType'] as String?;
+  final isRetryable = (details?['isRetryable'] as bool?) ?? false;
+  // Retry only when isRetryable is true.
+}
+```
+
+Retry only when `isRetryable` is `true`. Ask the user to disable a VPN for the
+`NETWORK_VPN` error type; verify integration options for `SDK_CONFIG`; and report
+persistent `RESPONSE_FORMAT` or `UNKNOWN` errors to adjoe.
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+Release SDK state when the current user signs out or when you need to reset the
+integration:
+
+```dart
+await Playtime.teardown();
+```
+
+<TeardownNote />
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
+
+## API Reference
+
+See the [Playtime API Reference](../api-reference.md) for option values and platform API links.
+
+## Verification Checklist
+
+1. Use the Android and iOS SDK hashes only in their corresponding native builds.
+2. Await `initPlaytime` before calling another SDK method.
+3. Initialize again with `userId` if it was unavailable at app startup.
+4. Confirm `getStatus` reports `isInitialized` and the intended user ID.
+5. Use `details.campaignsAvailable` as the primary availability signal.
+6. Inspect `details.campaignsState` when campaigns are unavailable.
+7. Record an impression every time the catalog entry point becomes visible.
+8. Await the local impression before opening the catalog.
+9. Pass only presentation fields in the catalog options.
+10. Prevent duplicate catalog presentations while a launch is in progress.
+11. Handle every `PlatformException` and retry only retryable failures.
+12. Call `teardown` on logout and initialize again before the next use.
+13. Test initialization, status, impression refresh, catalog presentation, errors, and
+    teardown on physical Android and iOS devices.

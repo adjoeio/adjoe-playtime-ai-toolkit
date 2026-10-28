@@ -1,6 +1,6 @@
 {
   "name": "playtime-sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Guidance for integrating the adjoe Playtime SDK.",
   "author": {
     "name": "adjoe"

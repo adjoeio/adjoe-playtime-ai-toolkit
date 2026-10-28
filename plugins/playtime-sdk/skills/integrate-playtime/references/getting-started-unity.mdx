@@ -1,0 +1,144 @@
+This guide walks you through adding the Playtime SDK v5 to a Unity project. The Unity
+package wraps the Android and iOS Playtime SDKs.
+
+:::info[Shared Setup]
+This setup applies to both [Catalog Integration](./standard-integration/overview.md) and
+[Studio Integration](./studio/overview.md). Complete it once, then continue with your
+chosen integration.
+:::
+
+<Stepper>
+<Step>
+
+## Check Requirements
+
+- Unity wrapper version 5.0.0
+- A Unity project that can create Android and iOS player builds
+- Android API 21+ and access to the adjoe Maven repository
+- iOS 14.0+, Xcode 26.5+, and CocoaPods
+- A physical iOS device for App Attest verification
+- Separate Android and iOS SDK hashes from your adjoe Account Manager
+
+</Step>
+<Step>
+
+## Obtain the Unity Package
+
+Obtain the Playtime SDK 5.0.0 release archive from adjoe and extract the supplied
+`.unitypackage`.
+
+</Step>
+<Step>
+
+## Import the Package
+
+1. Open the Unity project.
+2. Select **Assets → Import Package → Custom Package**.
+3. Select the Playtime v5 package.
+4. Make sure all files are selected, then import the package.
+5. In a C# script that initializes Playtime, add `using io.adjoe.sdk;` and confirm that
+   the namespace resolves in the Unity editor.
+
+After import, locate the Playtime files in the Unity project and run the External
+Dependency Manager for Unity to resolve the native dependencies.
+
+</Step>
+<Step>
+
+## Configure Android
+
+Set the minimum Android API level to 21 or later under **Player Settings → Android →
+Other Settings**. Add adjoe's repository to the repositories block in the active Gradle
+settings template:
+
+```gradle
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://releases.adjoe.io/maven" }
+    }
+}
+```
+
+The Unity package resolves the native Android SDK through the External Dependency
+Manager. Confirm that it resolves `io.adjoe:adjoe-sdk-android:5.0.0`. If your exported
+project needs an explicit dependency, add it to the app module dependencies in the active
+main Gradle template:
+
+```gradle
+dependencies {
+    implementation "io.adjoe:adjoe-sdk-android:5.0.0"
+}
+```
+
+Add the Android application ID and Play Store ID to the application in the adjoe
+dashboard.
+
+</Step>
+<Step>
+
+## Configure iOS
+
+Set the iOS target version to 14.0 or later in **Player Settings**, then export the Xcode
+project. The Unity 5.0.0 package uses `PlaytimeSDK` 5.0.0. In the exported project's
+`Podfile`, make sure the adjoe spec source and native dependency are present:
+
+```ruby
+source 'https://github.com/adjoeio/PlaytimeSpecExternal.git'
+
+pod 'PlaytimeSDK', '5.0.0'
+```
+
+Install the native dependency and open the generated workspace:
+
+```bash
+cd <exported-ios-project>
+pod install --repo-update
+open Unity-iPhone.xcworkspace
+```
+
+Complete [App Attest setup](./getting-started-ios.mdx#configure-app-attest) and
+[configure the production environment](./getting-started-ios.mdx#configure-production-environment)
+for the exported Unity-iPhone target. These steps are required even when the exported
+project builds normally.
+
+:::warning[Production entitlement required]
+The adjoe backend does not support development App Attest attestations. Development,
+TestFlight, and App Store builds must all use the `production` environment.
+:::
+
+</Step>
+<Step>
+
+## Build and Verify
+
+Create fresh Android and iOS player builds from **File → Build Settings**. After exporting
+the native projects, verify them from the command line.
+
+For Android, run the Gradle wrapper from the exported project:
+
+```bash
+cd <exported-android-project>
+./gradlew bundleRelease
+```
+
+For iOS, install pods and archive the workspace:
+
+```bash
+cd <exported-ios-project>
+pod install --repo-update
+xcodebuild -workspace Unity-iPhone.xcworkspace \
+  -scheme Unity-iPhone \
+  -configuration Release \
+  -archivePath build/Unity-iPhone.xcarchive archive
+```
+
+Confirm that `io.adjoe.sdk` resolves in C#, Android includes
+`io.adjoe:adjoe-sdk-android:5.0.0`, iOS includes `PlaytimeSDK` 5.0.0, and App Attest
+authenticates on a physical iOS device.
+
+</Step>
+</Stepper>
+
+Next, continue to [Use the SDK](./standard-integration/use-the-sdk-unity.mdx).

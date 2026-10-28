@@ -13,7 +13,7 @@ The linked Playtime documentation is the source of truth. Do not copy, infer, or
 
 Available as `$ARGUMENTS` when invoked as a slash command:
 
-- `platform` (optional): `ios`, `android`, or `react-native`.
+- `platform` (optional): `ios`, `android`, `react-native`, `flutter`, or `unity`.
 - `version` (optional): the installed Playtime SDK version.
 - `integration_type` (optional): `standard-catalog` or `studio`.
 
@@ -22,10 +22,12 @@ Available as `$ARGUMENTS` when invoked as a slash command:
 Use the platform supplied by the user when available. Otherwise, inspect the working directory and select the **outermost project that owns the build**, using the first matching rule below:
 
 1. **React Native** — root `package.json` includes `react-native` or `react-native-adjoe-sdk`.
-2. **Android** — a root or app-module `build.gradle` or `build.gradle.kts` applies `com.android.application`.
-3. **iOS** — root `Package.swift`, `Podfile`, `.xcodeproj`, or `.xcworkspace` exists.
+2. **Flutter** — root `pubspec.yaml` includes the `adjoe` package or the Flutter SDK.
+3. **Unity** — a Unity project with the Playtime files under `Assets/Adjoe`.
+4. **Android** — a root or app-module `build.gradle` or `build.gradle.kts` applies `com.android.application`.
+5. **iOS** — root `Package.swift`, `Podfile`, `.xcodeproj`, or `.xcworkspace` exists.
 
-If a React Native project contains `ios/` and `android/` folders, select the wrapper platform. If multiple independent top-level projects match, or no platform can be detected, ask the user which platform they want to migrate. State the selected platform and the evidence used before changing files.
+If a React Native, Flutter, or Unity project contains `ios/` and `android/` folders, select the wrapper platform. If multiple independent top-level projects match, or no platform can be detected, ask the user which platform they want to migrate. State the selected platform and the evidence used before changing files.
 
 ## 2. Determine the installed Playtime SDK version
 
@@ -36,6 +38,8 @@ Use the version supplied by the user when available. Otherwise inspect the selec
 | Android      | `io.adjoe:adjoe-sdk-android` in `build.gradle` or `build.gradle.kts`, then Gradle lockfiles or dependency reports         |
 | iOS          | `PlaytimeMonetize` or `PlaytimeSDK` in `Podfile`, `Podfile.lock`, `Package.swift`, or `Package.resolved`                  |
 | React Native | `react-native-adjoe-sdk` in `package.json` and the package lockfile; also inspect the native Android and iOS dependencies |
+| Flutter      | `adjoe` in `pubspec.yaml` and `pubspec.lock`; also inspect the native Android and iOS dependencies                        |
+| Unity        | `io.adjoe:adjoe-sdk-android` and `PlaytimeSDK` in the Editor dependency files under `Assets/Adjoe`                        |
 
 Prefer a resolved lockfile version over a declared range. For React Native, verify the native Android and iOS versions too: the JavaScript wrapper version alone does not prove the native SDK version.
 
@@ -73,9 +77,13 @@ For each v4.x integration being migrated, read exactly one matching v5 migration
 | Standard Catalog | Android      | [Migrate Catalog Android to v5](references/standard-integration/migrate-to-v5-android.mdx)           |
 | Standard Catalog | iOS          | [Migrate Catalog iOS to v5](references/standard-integration/migrate-to-v5-ios.mdx)                   |
 | Standard Catalog | React Native | [Migrate Catalog React Native to v5](references/standard-integration/migrate-to-v5-react-native.mdx) |
+| Standard Catalog | Flutter      | [Migrate Catalog Flutter to v5](references/standard-integration/migrate-to-v5-flutter.mdx)           |
+| Standard Catalog | Unity        | [Migrate Catalog Unity to v5](references/standard-integration/migrate-to-v5-unity.mdx)               |
 | Playtime Studio  | Android      | [Migrate Studio Android to v5](references/studio/migrate-to-v5-android.mdx)                          |
 | Playtime Studio  | iOS          | [Migrate Studio iOS to v5](references/studio/migrate-to-v5-ios.mdx)                                  |
 | Playtime Studio  | React Native | [Migrate Studio React Native to v5](references/studio/migrate-to-v5-react-native.mdx)                |
+| Playtime Studio  | Flutter      | [Migrate Studio Flutter to v5](references/studio/migrate-to-v5-flutter.mdx)                          |
+| Playtime Studio  | Unity        | [Migrate Studio Unity to v5](references/studio/migrate-to-v5-unity.mdx)                              |
 
 Follow the selected reference exactly.
 

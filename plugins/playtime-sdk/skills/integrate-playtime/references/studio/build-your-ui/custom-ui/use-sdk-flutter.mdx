@@ -1,0 +1,273 @@
+This guide covers the SDK operations for an Advanced Custom UI integration: initialize
+Playtime, fetch campaigns, track impressions, and open new or installed campaigns. The v5
+methods return `Future`s; await each operation and handle errors. To turn the returned
+models into UI, continue with [Build the Components](./build-components-flutter.mdx).
+
+<AiToolkit />
+
+:::danger[Premium Feature]
+Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+Contact your AM to enable Studio and obtain separate Android and iOS SDK hashes.
+:::
+
+<Stepper>
+<Step>
+
+## Initialize the SDK
+
+Complete [Flutter setup](../../../getting-started-flutter.mdx), then initialize with the SDK
+hash for the current platform. Never use the Android hash in an iOS build or the iOS hash in
+an Android build.
+
+<InitializationBehavior />
+
+```dart
+
+await Playtime.initPlaytime(InitOptions(
+  sdkHash: 'YOUR_PLATFORM_SDK_HASH',
+  userId: 'user_123',
+));
+```
+
+### InitOptions parameters
+
+<InitOptionsTable />
+
+</Step>
+<Step>
+
+## Manage TOS Consent
+
+<StudioTosConsent />
+
+```dart
+await PlaytimeStudio.updateTosConsent(TosConsentAction.ACCEPT);
+
+// If the user later withdraws consent:
+await PlaytimeStudio.updateTosConsent(TosConsentAction.WITHDRAW);
+```
+
+</Step>
+<Step>
+
+## Handle Usage Access
+
+Android usage access enables time-based campaigns and play-duration measurement. Request it
+after clear user intent and guard the Android-only API. iOS has no usage-access prompt and
+does not support Android time-based rewards.
+
+```dart
+import 'dart:io' show Platform;
+
+if (Platform.isAndroid) {
+  final status = await Playtime.getStatus();
+  if (status.isUsagePermissionAccepted != true) {
+    await PlaytimeStudio.showPermissionsPrompt();
+  }
+}
+```
+
+Users without usage access can still receive other eligible campaign and reward types.
+
+</Step>
+<Step>
+
+## Get Campaigns and Offer Details
+
+Build campaign cards from [SDK Models](../sdk-models.md) and the [Visual Guide](./visual-guide.md).
+Preserve the returned order and pass unmodified campaign objects to later SDK calls.
+
+### SDK Campaigns
+
+Check availability, then fetch campaigns for your custom catalog, carousel, or placement.
+Preserve the returned order.
+
+```dart
+final status = await Playtime.getStatus();
+if (!status.details.campaignsAvailable) {
+  // Do not render the placement. Inspect campaignsState for the reason.
+  return;
+}
+
+final response = await PlaytimeStudio.getCampaigns(CampaignOptions(
+  placement: StudioPlacement.homePage,
+  category: AppCategory.gaming,
+  displayFormat: DisplayFormat.carousel,
+));
+final campaigns = response.campaigns;
+```
+
+### Offer API Campaigns
+
+Select offers on your backend and pass their tokens to the SDK for complete campaign model
+data. Keep each Offer API token and app ID associated with its enriched campaign model. Keep
+Offer API credentials and server-side API tokens out of the app. An SDK campaign-availability
+check is not required for this route because the Offer API handles eligibility.
+
+```dart
+final response = await PlaytimeStudio.getOfferDetails(
+  ['token_from_offer_api'],
+  CampaignOptions(category: AppCategory.gaming),
+);
+final campaigns = response.campaigns;
+```
+
+See [Offer API](../offer-api.mdx) for the server-side request and token flow.
+
+<CampaignOptionsTable />
+
+Build cards and details screens from [SDK Models](../sdk-models.md). Preserve unmodified
+campaign objects from the current response for later SDK actions; do not construct them
+yourself.
+
+</Step>
+<Step>
+
+## Track Default and Engaged Impressions
+
+Immediately after retrieval, configure your campaign UI to report `DEFAULT` when the entire
+card is visible in the viewport. The SDK handles deduplication. This is the qualifying view
+required before `openInStore`.
+
+```dart
+await PlaytimeStudio.executeCampaignImpression(campaign, PlaytimeImpressionType.DEFAULT);
+```
+
+For a campaign selected by the Offer API, including one enriched by `getOfferDetails`, report
+the qualifying view with its retained identifiers:
+
+```dart
+await PlaytimeStudio.executeOfferImpression('token_from_offer_api', 'app_id_from_offer_api');
+```
+
+When the user opens the campaign details screen that you built, manually report an engaged
+impression. This event is additional and does not replace the qualifying default view.
+
+```dart
+await PlaytimeStudio.executeCampaignImpression(campaign, PlaytimeImpressionType.ENGAGED);
+```
+
+</Step>
+<Step>
+
+## Open a Campaign in the Store
+
+After the qualifying default view, open the selected campaign in its native store.
+
+:::warning[Record a view before openInStore]
+Before calling `openInStore`, record `executeCampaignImpression` with `DEFAULT` for a
+campaign selected by the SDK or `executeOfferImpression` for a campaign selected by the Offer
+API. `ENGAGED` does not qualify, and `openInStore` can fail without the required view.
+:::
+
+```dart
+await PlaytimeStudio.openInStore(campaign, true);
+```
+
+The second argument requests the supported native inline store flow. Availability varies by
+platform and SDK configuration; when it is unavailable, or when you pass `false`, the
+external native store flow opens.
+
+</Step>
+<Step>
+
+## Get Installed Campaigns
+
+Fetch installed campaigns for your custom in-progress experience. Refresh after the app
+returns from the store and whenever the view regains focus so progress is current.
+
+```dart
+final response = await PlaytimeStudio.getInstalledCampaigns(
+  InstalledCampaignOptions(category: AppCategory.gaming),
+);
+final installedCampaigns = response.campaigns;
+```
+
+Use [SDK Models](../sdk-models.md) to render installation status, reward completion, totals,
+expiration, sequential and bonus actions, repeatable progress, and platform-specific reward
+types.
+
+### InstalledCampaignOptions
+
+<InstalledCampaignOptionsTable />
+
+</Step>
+<Step>
+
+## Open an Installed Campaign
+
+Launch an installed app so the user can continue earning rewards:
+
+```dart
+await PlaytimeStudio.openInstalledCampaign(installedCampaign);
+```
+
+</Step>
+<Step>
+
+## Open Chatbot (Optional)
+
+Open support for a campaign, or omit the campaign for general support:
+
+```dart
+await PlaytimeStudio.openChatbot(campaign);
+await PlaytimeStudio.openChatbot(null);
+```
+
+</Step>
+<Step>
+
+## Check Status and Handle Errors
+
+Use `details.campaignsAvailable` as the primary signal for whether to show SDK campaigns.
+
+```dart
+final status = await Playtime.getStatus();
+
+if (status.isInitialized && status.details.campaignsAvailable) {
+  // Campaigns can be shown.
+}
+```
+
+<StatusExplanation />
+
+All SDK methods return `Future`s and can fail with a `PlatformException`. Read the `details`
+map to decide whether to retry and to categorize the error for diagnostics.
+
+```dart
+
+try {
+  final response = await PlaytimeStudio.getCampaigns(CampaignOptions(
+    placement: StudioPlacement.homePage,
+  ));
+  final campaigns = response.campaigns;
+} on PlatformException catch (e) {
+  final details = e.details as Map?;
+  final isRetryable = (details?['isRetryable'] as bool?) ?? false;
+}
+```
+
+<ErrorTypesTable />
+
+</Step>
+<Step>
+
+## Teardown (Optional)
+
+```dart
+await Playtime.teardown();
+```
+
+<TeardownNote />
+
+On Android, campaign operations resolve current campaign objects through an internal cache
+keyed by `campaignUUID`. Do not construct campaign objects manually or reuse stale objects
+after teardown; initialize again and fetch fresh campaigns.
+
+</Step>
+<Step>
+
+<S2sPayouts />
+
+</Step>
+</Stepper>
