@@ -1,0 +1,364 @@
+# Use the SDK
+
+> This guide covers the SDK operations for an Advanced Custom UI integration: initialize Playtime, fetch
+> campaigns, track impressions, and open new or installed campaigns. To turn the returned models
+> into UI, continue with [Build the Components](build-components-android.md).
+
+> **Danger: Premium Feature**
+>
+> Playtime Studio is a premium feature available by agreement with your adjoe Account Manager.
+> Contact your AM to enable Studio and obtain your Android SDK hash.
+
+## Initialize the SDK
+
+> **Info: Initialization behavior**
+>
+> Initialize Playtime as early as possible in the app lifecycle: preferably from
+> `Application.onCreate` on Android, during app launch on iOS, or during React Native app startup.
+> If the user identity is not available then, initialize again as soon as it is available.
+>
+> The SDK does not initialize implicitly. Wait for `initPlaytime` to complete successfully before
+> calling any other SDK method.
+
+To change a mutable, non-UA initialization value, call `initPlaytime` again and wait for it to
+complete.
+
+The backend records `uaNetwork`, `uaChannel`, and `uaCampaignName` independently. Each field can
+change from `null` to its first non-null value, but that recorded value cannot be cleared or
+replaced. Teardown and re-initialization do not reset it.
+
+```kotlin
+import io.adjoe.sdk.Playtime
+import io.adjoe.sdk.InitOptions
+import io.adjoe.sdk.PlaytimeInitListener
+import io.adjoe.sdk.PlaytimeException
+
+val options = InitOptions(
+    sdkHash = "YOUR_SDK_HASH",
+    userId = "user_123"
+)
+
+Playtime.initPlaytime(options, object : PlaytimeInitListener {
+    override fun onSuccess() {
+        // SDK ready — proceed with Studio methods
+    }
+    override fun onError(exception: PlaytimeException) {
+        // Handle error
+    }
+})
+```
+
+### InitOptions parameters
+
+| Parameter        | Type                  | Required | Default       | Description                                                                                                                                                                                                                                                                                      |
+| ---------------- | --------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sdkHash`        | `String`              | Yes      | —             | SDK hash from the adjoe dashboard. It must match this app's package name or bundle ID.                                                                                                                                                                                                           |
+| `userId`         | `String`              | No       | `null`/`nil`  | Stable, persistent, non-PII identifier used for reward attribution. It is not required for the first initialization, but initialize again with it before TOS consent or requesting campaigns. It is also required before displaying the Catalog. Generate and persist an ID for anonymous users. |
+| `userProfile`    | `PlaytimeUserProfile` | No       | `null`/`nil`  | Optional targeting information. See the nested fields below.                                                                                                                                                                                                                                     |
+| `extensions`     | `PlaytimeExtensions`  | No       | `null`/`nil`  | Publisher sub-IDs returned in S2S payout callbacks. See the nested fields below.                                                                                                                                                                                                                 |
+| `language`       | `String`              | No       | Device locale | ISO 639-1 language code that overrides the device language for SDK content.                                                                                                                                                                                                                      |
+| `uaNetwork`      | `String`              | No       | `null`/`nil`  | User-acquisition network. The backend accepts the first non-null value for this user and does not allow it to be cleared or replaced.                                                                                                                                                            |
+| `uaChannel`      | `String`              | No       | `null`/`nil`  | User-acquisition channel, such as `video` or `offerwall`. It has the same first-non-null persistence rule.                                                                                                                                                                                       |
+| `uaCampaignName` | `String`              | No       | `null`/`nil`  | User-acquisition campaign name. This replaces v4 `uaSubPublisherEncrypted`; it is sent using that backend field and has the same first-non-null persistence rule. v4 `uaSubPublisherCleartext` has no v5 replacement.                                                                            |
+| `country`        | `String`              | No       | `null`/`nil`  | ISO 3166-1 alpha-2 code used to map a user to a reward currency. Use only for multiple cash currencies. The SDK trims and uppercases it. It can be set only once per user and does not override device location.                                                                                 |
+
+### PlaytimeUserProfile fields
+
+| Parameter  | Type                              | Required | Description                                                                                  |
+| ---------- | --------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `gender`   | `PlaytimeGender`                  | No       | Male, female, or unknown, using the platform's corresponding enum value.                     |
+| `birthday` | Platform date / ISO 8601 `String` | No       | Birthday used for targeting. React Native accepts an ISO 8601 string; native SDKs use dates. |
+
+### PlaytimeExtensions fields
+
+| Parameter                 | Type     | Required | Description                                                 |
+| ------------------------- | -------- | -------- | ----------------------------------------------------------- |
+| `subId1` through `subId5` | `String` | No       | Optional publisher values returned in S2S payout callbacks. |
+
+Keep string values URL-safe and do not put PII in user IDs, UA fields, or sub-IDs.
+
+## Manage TOS Consent
+
+Before using Studio, incorporate adjoe's Terms of Service into your own terms and ask the user
+to accept those terms through explicit input. Never infer consent or submit acceptance
+automatically. Campaigns remain unavailable until you report the user's acceptance with
+`updateTosConsent`. If the user later withdraws consent, report the withdrawal with the same
+method.
+
+```kotlin
+import io.adjoe.sdk.studio.PlaytimeStudio
+import io.adjoe.sdk.studio.TosConsentAction
+import io.adjoe.sdk.studio.PlaytimeTosListener
+
+PlaytimeStudio.updateTosConsent(TosConsentAction.ACCEPT, object : PlaytimeTosListener {
+    override fun onUpdated() { /* consent accepted */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+
+// Call this if the user later withdraws consent.
+PlaytimeStudio.updateTosConsent(TosConsentAction.WITHDRAW, tosListener)
+```
+
+## Handle Usage Access
+
+Android usage access enables time-based campaigns and play-duration measurement. Request it
+after explaining the benefit and in response to clear user intent.
+
+```kotlin
+PlaytimeStudio.showPermissionsPrompt(activity, object : PlaytimePermissionsListener {
+    override fun onReceived() { /* prompt result received */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+```
+
+> **Tip**
+>
+> Users without usage access can still receive eligible non-time-based campaigns.
+
+## Get Campaigns and Offer Details
+
+Build campaign cards from [SDK Models](../sdk-models.md) and the [Visual Guide](visual-guide.md). Preserve the returned order and pass unmodified campaign objects to later SDK calls.
+
+Use `getCampaigns` to fetch the available campaigns for a catalog, carousel, native
+placement, or other custom campaign view. Preserve the campaign order and unmodified campaign
+objects returned by the SDK.
+
+**Option A: Get Campaigns with the SDK**
+
+```kotlin
+val status = Playtime.getStatus()
+if (!status.details.campaignsAvailable) {
+    // Do not render the placement. Inspect campaignsState for the reason.
+    return
+}
+
+val campaignOptions = CampaignOptions(
+    placement = StudioPlacement.HomePage,
+    category = AppCategory.GAMING,
+    displayFormat = DisplayFormat.Carousel
+)
+
+PlaytimeStudio.getCampaigns(campaignOptions, object : PlaytimeCampaignsListener {
+    override fun onReceived(response: PlaytimeCampaignsResponse) {
+        val campaigns = response.campaigns
+        // Render in your custom UI
+    }
+    override fun onError(exception: PlaytimeException) {
+        // Handle error
+    }
+})
+```
+
+**`CampaignOptions` parameters**
+
+| Parameter       | Type               | Required | Default              | Description                                                                                                         |
+| --------------- | ------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `placement`     | `StudioPlacement`  | No       | `null`               | Where campaigns are displayed. Use a predefined value or `.Custom("value")`.                                        |
+| `category`      | `AppCategory`      | No       | `AppCategory.GAMING` | If omitted, the SDK uses the gaming category. Specify `NON_GAMING` or `BOTH` to request another category selection. |
+| `displayFormat` | `DisplayFormat`    | No       | `null`               | How campaigns are visually presented through your custom UI. Use a predefined value or `.Custom("value")`.          |
+| `promotionTag`  | `String`           | No       | `null`               | Tag for user-level promotions. See [User Level Promos](https://test-docs.adjoe.zone/rewarded-solutions/sdks/studio/build-your-ui/resources/user-level-promos).                          |
+| `metadata`      | `PlaytimeMetadata` | No       | `null`               | Two optional free-form strings, `metadata1` and `metadata2`, that the SDK sends to adjoe with the campaign request. |
+
+See [StudioPlacement, DisplayFormat, and AppCategory](https://test-docs.adjoe.zone/rewarded-solutions/sdks/studio/build-your-ui/api-reference#option-values) for every predefined value and custom-value syntax. `PlaytimeMetadata` contains optional `metadata1` and `metadata2` strings returned in S2S payouts.
+
+**Option B: Get Campaigns with the Offer API**
+
+Select campaigns on your backend via the REST API, then call `getOfferDetails` for complete
+SDK model data. Retain each Offer API token and app ID alongside the enriched campaign. Keep
+Offer API credentials on your server. An SDK status check is not needed for this route because
+the Offer API handles eligibility.
+
+```kotlin
+data class OfferIdentifiers(val token: String, val appID: String)
+
+val offer = OfferIdentifiers(
+    token = "token_from_offer_api",
+    appID = "app_id_from_offer_api"
+)
+val campaignOptions = CampaignOptions(
+    placement = StudioPlacement.HomePage,
+    displayFormat = DisplayFormat.Carousel
+)
+
+PlaytimeStudio.getOfferDetails(listOf(offer.token), campaignOptions, object : PlaytimeCampaignsListener {
+    override fun onReceived(response: PlaytimeCampaignsResponse) {
+        val campaigns = response.campaigns
+        // Keep offer with its enriched campaign for later tracking and store actions.
+    }
+    override fun onError(exception: PlaytimeException) {
+        // Handle error
+    }
+})
+```
+
+→ See the [Offer API](../offer-api.md) page for REST API details.
+
+Build your cards and custom detail screens from **[SDK Models](../sdk-models.md)**. Do not
+construct campaign objects yourself.
+
+## Track Default and Engaged Impressions
+
+After retrieving campaigns, report `DEFAULT` when the entire campaign card is visible in the
+user's viewport. The SDK handles deduplication. This is the qualifying view required before
+`openInStore`.
+
+```kotlin
+PlaytimeStudio.executeCampaignImpression(
+    campaign,
+    PlaytimeImpressionType.DEFAULT,
+    object : PlaytimeExecuteImpressionListener {
+        override fun onFinished() { /* tracked */ }
+        override fun onAlreadyEngaging() { /* an impression for this item is already in progress */ }
+        override fun onError(exception: PlaytimeException) { /* handle error */ }
+    }
+)
+```
+
+For an Offer API campaign, use the retained token and app ID, including when the card uses
+campaign data enriched by `getOfferDetails`:
+
+```kotlin
+PlaytimeStudio.executeOfferImpression(offer.token, offer.appID, object : PlaytimeExecuteImpressionListener {
+    override fun onFinished() { /* tracked */ }
+    override fun onAlreadyEngaging() { /* an impression for this item is already in progress */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+```
+
+When the user opens the custom campaign details screen you built, report an additional
+`ENGAGED` impression. It does not replace the qualifying default view.
+
+```kotlin
+PlaytimeStudio.executeCampaignImpression(
+    campaign,
+    PlaytimeImpressionType.ENGAGED,
+    object : PlaytimeExecuteImpressionListener {
+        override fun onFinished() { /* tracked */ }
+        override fun onAlreadyEngaging() { /* an impression for this item is already in progress */ }
+        override fun onError(exception: PlaytimeException) { /* handle error */ }
+    }
+)
+```
+
+## Open a Campaign in the Store
+
+After fetching the campaign and recording its qualifying view, use `openInStore` when the user
+selects it to install. Pass the unmodified campaign returned by `getCampaigns` or
+`getOfferDetails`.
+
+> **Warning: Record a view before openInStore**
+>
+> Record a `DEFAULT` campaign impression or the token-based Offer API impression before this
+> call. `ENGAGED` does not qualify, and `openInStore` can fail without the required view.
+
+```kotlin
+PlaytimeStudio.openInStore(campaign, true, object : PlaytimeOpenStoreListener {
+    override fun onFinished() { /* store opened */ }
+    override fun onAlreadyClicking() { /* a store open for this campaign is already in progress */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+```
+
+The `useInlineInstall` parameter controls whether the Play Store sheet appears in-app
+(inline) or opens the external Play Store app. No dashboard configuration is required.
+
+## Get Installed Campaigns
+
+Use to build an "In Progress" section showing apps the user has already installed.
+
+```kotlin
+val options = InstalledCampaignOptions(category = AppCategory.GAMING)
+
+PlaytimeStudio.getInstalledCampaigns(options, object : PlaytimeCampaignsListener {
+    override fun onReceived(response: PlaytimeCampaignsResponse) {
+        val installedCampaigns = response.campaigns
+    }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+```
+
+Use [SDK Models](../sdk-models.md) to render installation status, completion, collected
+rewards, expiration, and milestone progress. Refresh this data after the app returns from the
+store and whenever the view regains focus.
+
+### InstalledCampaignOptions
+
+| Parameter  | Type          | Required | Default              | Description                                                                                                         |
+| ---------- | ------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `category` | `AppCategory` | No       | `AppCategory.GAMING` | If omitted, the SDK uses the gaming category. Specify `NON_GAMING` or `BOTH` to request another category selection. |
+
+## Open an Installed Campaign
+
+Reopens an already-installed app to continue reward tracking.
+
+```kotlin
+PlaytimeStudio.openInstalledCampaign(campaign, object : PlaytimeOpenInstalledCampaignListener {
+    override fun onOpened() { /* app opened */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+```
+
+## Open Chatbot (Optional)
+
+Opens the adjoe chatbot in an external browser for campaign support. Pass `null` for general
+support.
+
+```kotlin
+PlaytimeStudio.openChatbot(activity, campaign, object : PlaytimeDeeplinkListener {
+    override fun onOpened() { /* chatbot opened */ }
+    override fun onError(exception: PlaytimeException) { /* handle error */ }
+})
+
+PlaytimeStudio.openChatbot(activity, null, chatbotListener)
+```
+
+## Check Status and Handle Errors
+
+Use SDK status as the source of truth for initialization, consent, usage permission, and SDK
+campaign availability. `isFraud` is informational; do not hide campaigns based on it.
+
+```kotlin
+val status = Playtime.getStatus()
+
+if (status.isInitialized && status.isTosAccepted && status.details.campaignsAvailable) {
+    // SDK campaigns can be fetched and shown.
+} else {
+    // Inspect status.details.campaignsState for the reason.
+}
+```
+
+| State             | Description                                           |
+| ----------------- | ----------------------------------------------------- |
+| `READY`           | Campaigns are available and can be shown              |
+| `BLOCKED`         | User is blocked from seeing campaigns                 |
+| `VPN_DETECTED`    | A VPN was detected; campaigns are unavailable         |
+| `GEO_MISMATCH`    | User's location doesn't match the app's target region |
+| `NOT_INITIALIZED` | SDK initialization has not completed                  |
+
+Every failure callback receives a `PlaytimeException`. Log its `code`, `errorType`,
+`isRetryable`, and `message`; retry only when `isRetryable` is true. Error types are
+`NETWORK`, `NETWORK_VPN`, `API`, `RESPONSE_FORMAT`, `SDK_CONFIG`, and `UNKNOWN`.
+
+## Teardown (Optional)
+
+```kotlin
+Playtime.teardown(object : PlaytimeTeardownListener {
+    override fun onSuccess() {
+        // The SDK is deinitialized.
+    }
+
+    override fun onError(error: PlaytimeException) {
+        // Handle teardown failure.
+    }
+})
+```
+
+Call when the user logs out or Playtime is no longer needed. After teardown, initialize again,
+wait for success, and fetch fresh campaigns before using another SDK method. Do not reuse stale
+campaign objects.
+
+## Set Up Server-to-Server Payouts
+
+Finally, set up [Server-to-Server (S2S) payouts](https://test-docs.adjoe.zone/rewarded-solutions/setting-up-rewarding/server-to-server-payouts) so your backend can receive payout callbacks and distribute rewards to users.
+
+→ See [Best Practices](../../best-practices.md) for performance optimization, campaign refreshing, and impression tracking guidance.

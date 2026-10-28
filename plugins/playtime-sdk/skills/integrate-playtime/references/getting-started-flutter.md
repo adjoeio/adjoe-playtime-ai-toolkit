@@ -1,0 +1,130 @@
+# Get Started
+
+> This guide walks you through adding the Playtime SDK v5 to a Flutter app. The Flutter
+> package wraps the Android and iOS Playtime SDKs.
+
+> **Info: Shared Setup**
+>
+> This setup applies to both [Catalog Integration](https://test-docs.adjoe.zone/rewarded-solutions/sdks/standard-integration/overview) and
+> [Studio Integration](studio/overview.md). Complete it once, then continue with your
+> chosen integration.
+
+## Check Requirements
+
+- Flutter wrapper version 5.0.0
+- Flutter and Dart with Android and iOS native projects
+- Android API 24+, Java 11, and access to the adjoe Maven repository
+- iOS 14.0+, Xcode 26.5+, and CocoaPods
+- A physical iOS device for App Attest verification
+- Separate Android and iOS SDK hashes from your adjoe Account Manager
+- A native Flutter target; Playtime does not run in Flutter web
+
+## Add the Flutter Package
+
+Add the Playtime package from the official Git repository to `pubspec.yaml`:
+
+```yaml
+dependencies:
+  adjoe:
+    git:
+      url: https://github.com/adjoeio/adjoe-flutter-sdk
+      ref: v5.0.0
+```
+
+Fetch dependencies:
+
+```bash
+flutter pub get
+```
+
+Import the package where you initialize or call Playtime:
+
+```dart
+import 'package:adjoe/sdk.dart';
+```
+
+## Configure Android
+
+Add adjoe's Maven repository to `android/settings.gradle` or
+`android/settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://releases.adjoe.io/maven") }
+    }
+}
+```
+
+Add the native Android SDK to `android/app/build.gradle` or
+`android/app/build.gradle.kts`:
+
+```kotlin
+dependencies {
+    implementation("io.adjoe:adjoe-sdk-android:5.0.0")
+}
+```
+
+Add the Android package name and Play Store ID to the application in the adjoe dashboard,
+then rebuild the native app.
+
+## Configure iOS
+
+Add the adjoe spec source and native iOS SDK to the Runner target in your `Podfile`:
+
+```ruby
+source 'https://github.com/adjoeio/PlaytimeSpecExternal.git'
+
+platform :ios, '14.0'
+
+target 'Runner' do
+  use_frameworks!
+  pod 'PlaytimeSDK', '5.0.0'
+end
+```
+
+Install the native pods:
+
+```bash
+cd ios
+pod install --repo-update
+```
+
+Open `Runner.xcworkspace`, not `Runner.xcodeproj`, when building in Xcode. Confirm that
+`Podfile.lock` resolves `PlaytimeSDK` 5.0.0.
+
+Complete [App Attest setup](getting-started-ios.md#configure-app-attest) and
+[configure the production environment](getting-started-ios.md#configure-production-environment)
+for the Runner target. These steps are required even when the app builds normally.
+
+> **Warning: Production entitlement required**
+>
+> The adjoe backend does not support development App Attest attestations. Development,
+> TestFlight, and App Store builds must all use the `production` environment.
+
+## Build and Verify
+
+Installing the Dart package is not enough after adding or upgrading native code. Clean
+the project and create new Android and iOS binaries:
+
+```bash
+flutter clean
+flutter pub get
+flutter build appbundle
+flutter build ios --release
+```
+
+Run each native target on a device:
+
+```bash
+flutter run -d <android-device-id>
+flutter run -d <ios-device-id>
+```
+
+Confirm that `package:adjoe/sdk.dart` resolves, Android includes
+`io.adjoe:adjoe-sdk-android:5.0.0`, iOS includes `PlaytimeSDK` 5.0.0, and App Attest
+authenticates on a physical iOS device.
+
+Next, continue to [Use the SDK](standard-integration/use-the-sdk-flutter.md).

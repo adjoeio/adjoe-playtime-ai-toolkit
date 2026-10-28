@@ -1,6 +1,8 @@
-Use the tables on this page to choose the campaign and reward data you need for your custom UI.
-See your platform's Custom UI guide for SDK methods, impression tracking, and store actions.
-For SDK-managed campaign details, use the platform-specific Quick-Start Custom UI guide.
+# SDK Models
+
+> Use the tables on this page to choose the campaign and reward data you need for your custom UI.
+> See your platform's Custom UI guide for SDK methods, impression tracking, and store actions.
+> For SDK-managed campaign details, use the platform-specific Quick-Start Custom UI guide.
 
 ## Conventions
 
@@ -52,10 +54,10 @@ These fields belong to `PlaytimeCampaign`.
 `PlaytimeMedia` contains optional `portrait` and `landscape` URL strings. Provide a
 fallback when the requested media or orientation is absent.
 
-:::warning[Experimental]
-The `isCpa`, `cpa`, and `cpaActions` fields are not yet supported and should not be used
-in your integration.
-:::
+> **Warning: Experimental**
+>
+> The `isCpa`, `cpa`, and `cpaActions` fields are not yet supported and should not be used
+> in your integration.
 
 ## Promotions
 
@@ -126,10 +128,10 @@ action collection. Show repeatable progress when `rewardsCount` is greater than 
 
 ## Time-Based Rewards
 
-:::warning[Android only]
-Time-based rewards are supported on Android only. Do not build an iOS UI that depends on
-these fields.
-:::
+> **Warning: Android only**
+>
+> Time-based rewards are supported on Android only. Do not build an iOS UI that depends on
+> these fields.
 
 | Field                            | Type                          | Platforms | Used for       | Description                                        |
 | -------------------------------- | ----------------------------- | --------- | -------------- | -------------------------------------------------- |
@@ -158,11 +160,11 @@ within a limited window. They are separate from Android-only time-based rewards.
 
 Campaign promotions do not apply to time-boosted reward values.
 
-:::warning[Do not use isTimed for detection]
-Until [DC-1440](https://adjoe.atlassian.net/browse/DC-1440) is resolved, `isTimed` can be null or
-false for an action that has a time boost. Detect a boost with `timedCoins != null && timedCoins > 0`.
-Use `timedCoinsDuration` or `boosterExpiresAt` only for the displayed time window or deadline.
-:::
+> **Warning: Do not use isTimed for detection**
+>
+> Until [DC-1440](https://adjoe.atlassian.net/browse/DC-1440) is resolved, `isTimed` can be null or
+> false for an action that has a time boost. Detect a boost with `timedCoins != null && timedCoins > 0`.
+> Use `timedCoinsDuration` or `boosterExpiresAt` only for the displayed time window or deadline.
 
 ## Cashback Rewards
 

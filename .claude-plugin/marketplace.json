@@ -11,7 +11,7 @@
       "displayName": "adjoe Playtime SDK",
       "source": "./plugins/playtime-sdk",
       "description": "Guidance for integrating the adjoe Playtime SDK.",
-      "version": "0.3.2",
+      "version": "0.4.1",
       "category": "developer-tools",
       "author": {
         "name": "adjoe"

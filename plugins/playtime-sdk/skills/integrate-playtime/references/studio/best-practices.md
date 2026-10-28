@@ -1,10 +1,12 @@
-## Initialization
+# Best Practices
 
-- Call `initPlaytime` as early as possible in your app's lifecycle (e.g., `Application.onCreate` on Android, app launch on iOS). The SDK does not initialize implicitly, and initialization must complete successfully before any other SDK method is called.
-- Use a **stable, persistent `userId`** for correct reward attribution. If your app has accounts, use the backend user ID. For anonymous users, generate a UUID once and persist it locally. Never use PII (email, phone).
-- Ensure `sdkHash` matches your adjoe Dashboard configuration exactly — a mismatch prevents initialization.
-- The backend records `uaNetwork`, `uaChannel`, and `uaCampaignName` independently. Each can change from `null` to its first non-null value. After that, the same value is harmless, but the field cannot change to `null` or a different value. Teardown and re-initialization do not replace recorded backend values.
-- Keep all string parameters (userId, placement, UA params, extension sub-IDs) URL-safe. Avoid `&`, `=`, `?`, `#`, or spaces.
+> - Call `initPlaytime` as early as possible in your app's lifecycle (e.g., `Application.onCreate` on Android, app launch on iOS). The SDK does not initialize implicitly, and initialization must complete successfully before any other SDK method is called.
+> - Use a **stable, persistent `userId`** for correct reward attribution. If your app has accounts, use the backend user ID. For anonymous users, generate a UUID once and persist it locally. Never use PII (email, phone).
+> - Ensure `sdkHash` matches your adjoe Dashboard configuration exactly — a mismatch prevents initialization.
+> - The backend records `uaNetwork`, `uaChannel`, and `uaCampaignName` independently. Each can change from `null` to its first non-null value. After that, the same value is harmless, but the field cannot change to `null` or a different value. Teardown and re-initialization do not replace recorded backend values.
+> - Keep all string parameters (userId, placement, UA params, extension sub-IDs) URL-safe. Avoid `&`, `=`, `?`, `#`, or spaces.
+
+## Initialization
 
 ## Performance
 
@@ -18,8 +20,8 @@ These practices apply to both Quick-Start Custom UI and Advanced Custom UI. Trea
 campaign response as the source of truth and adapt the presentation to your app's design system
 and placement needs. You can use any icon, portrait or landscape image, or portrait or landscape
 video returned by the SDK. Always provide a fallback because a selected creative or orientation
-can be absent. See [SDK Models](./build-your-ui/sdk-models.md) for the complete field reference.
-For Advanced Custom UI, the [Build the Components](./build-your-ui/custom-ui/build-components-android.mdx)
+can be absent. See [SDK Models](build-your-ui/sdk-models.md) for the complete field reference.
+For Advanced Custom UI, the [Build the Components](build-your-ui/custom-ui/build-components-android.md)
 recipes are starter layouts rather than required designs.
 
 Render every supported reward type present in the response, including sequential, bonus,

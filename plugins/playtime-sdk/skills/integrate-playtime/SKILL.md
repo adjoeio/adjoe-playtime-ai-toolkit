@@ -60,11 +60,11 @@ After the platform and integration type are known, read the matching platform se
 
 | Platform     | Setup                                                                                           |
 | ------------ | ----------------------------------------------------------------------------------------------- |
-| Android      | [Android Get Started](references/getting-started-android.mdx)           |
-| iOS          | [iOS Get Started](references/getting-started-ios.mdx)                   |
-| React Native | [React Native Get Started](references/getting-started-react-native.mdx) |
-| Flutter      | [Flutter Get Started](references/getting-started-flutter.mdx)           |
-| Unity        | [Unity Get Started](references/getting-started-unity.mdx)               |
+| Android      | [Android Get Started](references/getting-started-android.md)           |
+| iOS          | [iOS Get Started](references/getting-started-ios.md)                   |
+| React Native | [React Native Get Started](references/getting-started-react-native.md) |
+| Flutter      | [Flutter Get Started](references/getting-started-flutter.md)           |
+| Unity        | [Unity Get Started](references/getting-started-unity.md)               |
 
 ## 4. Read the matching integration references
 
@@ -76,26 +76,26 @@ integration.
 
 | Platform     | Integration guidance                                                                                                     |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Android      | [Android Catalog Integration](references/standard-integration/use-the-sdk-android.mdx)           |
-| iOS          | [iOS Catalog Integration](references/standard-integration/use-the-sdk-ios.mdx)                   |
-| React Native | [React Native Catalog Integration](references/standard-integration/use-the-sdk-react-native.mdx) |
-| Flutter      | [Flutter Catalog Integration](references/standard-integration/use-the-sdk-flutter.mdx)           |
-| Unity        | [Unity Catalog Integration](references/standard-integration/use-the-sdk-unity.mdx)               |
+| Android      | [Android Catalog Integration](references/standard-integration/use-the-sdk-android.md)           |
+| iOS          | [iOS Catalog Integration](references/standard-integration/use-the-sdk-ios.md)                   |
+| React Native | [React Native Catalog Integration](references/standard-integration/use-the-sdk-react-native.md) |
+| Flutter      | [Flutter Catalog Integration](references/standard-integration/use-the-sdk-flutter.md)           |
+| Unity        | [Unity Catalog Integration](references/standard-integration/use-the-sdk-unity.md)               |
 
 ### Playtime Studio
 
 | Platform     | Quick-Start Custom UI                                                                                                      | Advanced Custom UI: use the SDK                                                                                      | Advanced Custom UI: build components                                                                                                  |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Android      | [Android Quick-Start Custom UI](references/studio/build-your-ui/quick-start-android.mdx)           | [Android SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-android.mdx)           | [Android component recipes](references/studio/build-your-ui/custom-ui/build-components-android.mdx)           |
-| iOS          | [iOS Quick-Start Custom UI](references/studio/build-your-ui/quick-start-ios.mdx)                   | [iOS SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-ios.mdx)                   | [iOS component recipes](references/studio/build-your-ui/custom-ui/build-components-ios.mdx)                   |
-| React Native | [React Native Quick-Start Custom UI](references/studio/build-your-ui/quick-start-react-native.mdx) | [React Native SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-react-native.mdx) | [React Native component recipes](references/studio/build-your-ui/custom-ui/build-components-react-native.mdx) |
-| Flutter      | [Flutter Quick-Start Custom UI](references/studio/build-your-ui/quick-start-flutter.mdx)           | [Flutter SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-flutter.mdx)           | [Flutter component recipes](references/studio/build-your-ui/custom-ui/build-components-flutter.mdx)           |
-| Unity        | [Unity Quick-Start Custom UI](references/studio/build-your-ui/quick-start-unity.mdx)               | [Unity SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-unity.mdx)               | [Unity component recipes](references/studio/build-your-ui/custom-ui/build-components-unity.mdx)               |
+| Android      | [Android Quick-Start Custom UI](references/studio/build-your-ui/quick-start-android.md)           | [Android SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-android.md)           | [Android component recipes](references/studio/build-your-ui/custom-ui/build-components-android.md)           |
+| iOS          | [iOS Quick-Start Custom UI](references/studio/build-your-ui/quick-start-ios.md)                   | [iOS SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-ios.md)                   | [iOS component recipes](references/studio/build-your-ui/custom-ui/build-components-ios.md)                   |
+| React Native | [React Native Quick-Start Custom UI](references/studio/build-your-ui/quick-start-react-native.md) | [React Native SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-react-native.md) | [React Native component recipes](references/studio/build-your-ui/custom-ui/build-components-react-native.md) |
+| Flutter      | [Flutter Quick-Start Custom UI](references/studio/build-your-ui/quick-start-flutter.md)           | [Flutter SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-flutter.md)           | [Flutter component recipes](references/studio/build-your-ui/custom-ui/build-components-flutter.md)           |
+| Unity        | [Unity Quick-Start Custom UI](references/studio/build-your-ui/quick-start-unity.md)               | [Unity SDK guide](references/studio/build-your-ui/custom-ui/use-sdk-unity.md)               | [Unity component recipes](references/studio/build-your-ui/custom-ui/build-components-unity.md)               |
 
 For the chosen Studio UI path, also read:
 
 - [Studio overview](references/studio/overview.md)
-- [Offer API](references/studio/build-your-ui/offer-api.mdx)
+- [Offer API](references/studio/build-your-ui/offer-api.md)
 - [SDK Models](references/studio/build-your-ui/sdk-models.md)
 - [Visual Guide](references/studio/build-your-ui/custom-ui/visual-guide.md)
 - [API Reference](references/studio/api-reference.md)
@@ -113,8 +113,8 @@ available for React Native, Flutter, or Unity.
 
 | Platform | Integration guidance                                                                   |
 | -------- | -------------------------------------------------------------------------------------- |
-| Android  | [Android Drop-In UI](references/studio/drop-in-ui-android.mdx) |
-| iOS      | [iOS Drop-In UI](references/studio/drop-in-ui-ios.mdx)         |
+| Android  | [Android Drop-In UI](references/studio/drop-in-ui-android.md) |
+| iOS      | [iOS Drop-In UI](references/studio/drop-in-ui-ios.md)         |
 
 ## 5. Implement the selected flow
 

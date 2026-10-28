@@ -74,16 +74,16 @@ For each v4.x integration being migrated, read exactly one matching v5 migration
 
 | Integration      | Platform     | v5 migration reference                                                                                                       |
 | ---------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Standard Catalog | Android      | [Migrate Catalog Android to v5](references/standard-integration/migrate-to-v5-android.mdx)           |
-| Standard Catalog | iOS          | [Migrate Catalog iOS to v5](references/standard-integration/migrate-to-v5-ios.mdx)                   |
-| Standard Catalog | React Native | [Migrate Catalog React Native to v5](references/standard-integration/migrate-to-v5-react-native.mdx) |
-| Standard Catalog | Flutter      | [Migrate Catalog Flutter to v5](references/standard-integration/migrate-to-v5-flutter.mdx)           |
-| Standard Catalog | Unity        | [Migrate Catalog Unity to v5](references/standard-integration/migrate-to-v5-unity.mdx)               |
-| Playtime Studio  | Android      | [Migrate Studio Android to v5](references/studio/migrate-to-v5-android.mdx)                          |
-| Playtime Studio  | iOS          | [Migrate Studio iOS to v5](references/studio/migrate-to-v5-ios.mdx)                                  |
-| Playtime Studio  | React Native | [Migrate Studio React Native to v5](references/studio/migrate-to-v5-react-native.mdx)                |
-| Playtime Studio  | Flutter      | [Migrate Studio Flutter to v5](references/studio/migrate-to-v5-flutter.mdx)                          |
-| Playtime Studio  | Unity        | [Migrate Studio Unity to v5](references/studio/migrate-to-v5-unity.mdx)                              |
+| Standard Catalog | Android      | [Migrate Catalog Android to v5](references/standard-integration/migrate-to-v5-android.md)           |
+| Standard Catalog | iOS          | [Migrate Catalog iOS to v5](references/standard-integration/migrate-to-v5-ios.md)                   |
+| Standard Catalog | React Native | [Migrate Catalog React Native to v5](references/standard-integration/migrate-to-v5-react-native.md) |
+| Standard Catalog | Flutter      | [Migrate Catalog Flutter to v5](references/standard-integration/migrate-to-v5-flutter.md)           |
+| Standard Catalog | Unity        | [Migrate Catalog Unity to v5](references/standard-integration/migrate-to-v5-unity.md)               |
+| Playtime Studio  | Android      | [Migrate Studio Android to v5](references/studio/migrate-to-v5-android.md)                          |
+| Playtime Studio  | iOS          | [Migrate Studio iOS to v5](references/studio/migrate-to-v5-ios.md)                                  |
+| Playtime Studio  | React Native | [Migrate Studio React Native to v5](references/studio/migrate-to-v5-react-native.md)                |
+| Playtime Studio  | Flutter      | [Migrate Studio Flutter to v5](references/studio/migrate-to-v5-flutter.md)                          |
+| Playtime Studio  | Unity        | [Migrate Studio Unity to v5](references/studio/migrate-to-v5-unity.md)                              |
 
 Follow the selected reference exactly.
 

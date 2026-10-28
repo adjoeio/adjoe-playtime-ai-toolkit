@@ -1,8 +1,10 @@
-Studio is a dynamic way to build and customize gaming experiences in your app. Our SDK has been optimized and unified so that integrating with iOS, Android, or cross-platform frameworks is easier than ever.
+# Visual Guide
+
+> Studio is a dynamic way to build and customize gaming experiences in your app. Our SDK has been optimized and unified so that integrating with iOS, Android, or cross-platform frameworks is easier than ever.
 
 Below are guidelines for building your own UI. The models are shared across platforms, though there are slight syntax differences when calling SDK methods.
 
-For a full implementation, check out our [example apps](../../examples.md).
+For a full implementation, check out our [example apps](https://test-docs.adjoe.zone/rewarded-solutions/sdks/studio/examples).
 
 ---
 
@@ -10,53 +12,28 @@ For a full implementation, check out our [example apps](../../examples.md).
 
 Fetch campaigns and render them in your own interface.
 
-<div className="row">
-  <div className="col col--6">
+Best For
 
-<p><strong>Best For</strong></p>
-<ul>
-  <li>Full control over UI/UX</li>
-  <li>Custom and "Native" Feel</li>
-  <li>Advanced monetization optimization</li>
-</ul>
+Full control over UI/UX
+Custom and "Native" Feel
+Advanced monetization optimization
 
-  </div>
-  <div className="col col--6">
+Considerations
 
-<p><strong>Considerations</strong></p>
-<ul>
-  <li>Considerable engineering effort</li>
-</ul>
-
-  </div>
-</div>
+Considerable engineering effort
 
 **Step 1. Create a Catalog**
-
-<img
-src="/img/playtime-studio/integration/create-catalog.png"
-alt="Catalog Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 1. Call `PlaytimeStudio.getCampaigns()`
 2. Use field `iconImage` to display the icon image of the app.
 3. Use `totalCoinsPossible` to display the maximum amount of rewards available per game.
 4. Call `PlaytimeStudio.openInStore()` to take the user to the App Store to install the game.
 5. Use `appName` to display the name of the app.
-6. Call `PlaytimeStudio.executeCampaignImpression` with the platform's `DEFAULT` impression type when the entire campaign card is visible in the viewport. If you are using the [Offer API](../offer-api.mdx), call `PlaytimeStudio.executeOfferImpression` instead, using the `appID` and `token` from the API response.
-
-<div style={{ clear: 'both' }} />
+6. Call `PlaytimeStudio.executeCampaignImpression` with the platform's `DEFAULT` impression type when the entire campaign card is visible in the viewport. If you are using the [Offer API](../offer-api.md), call `PlaytimeStudio.executeOfferImpression` instead, using the `appID` and `token` from the API response.
 
 ---
 
 **Step 2. Show Installed Campaigns**
-
-<img
-src="/img/playtime-studio/integration/show-installed-campaigns.png"
-alt="Installed Games Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 1. Call `PlaytimeStudio.getInstalledCampaigns()`
 2. Use `iconImage` to display the icon image of the app.
@@ -68,17 +45,9 @@ style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px
 5. The `promotion.boostFactor` is used determine reward multiplication (e.g., factor of 2 doubles rewards).
 6. `totalCoinsPossible` and `amount` are already multiplied by the boost factor.
 
-<div style={{ clear: 'both' }} />
-
 ---
 
 **Step 3. Show the Offer Details**
-
-<img
-src="/img/playtime-studio/integration/show-offer-details.png"
-alt="Game Details Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 Depending on the source, use the response from `PlaytimeStudio.getCampaigns()` or `PlaytimeStudio.getInstalledCampaigns()`.
 
@@ -110,17 +79,9 @@ Depending on the source, use the response from `PlaytimeStudio.getCampaigns()` o
 - Use `rewardedAt` for completion status.
 - Use `isCompleted` to indicate all levels are done.
 
-<div style={{ clear: 'both' }} />
-
 ---
 
 **Step 4. Time Boosted Milestones**
-
-<img
-src="/img/playtime-studio/integration/time-boosted.png"
-alt="Time Boost Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 Use `PlaytimeRewardAction` to get required values:
 
@@ -134,17 +95,9 @@ Use `PlaytimeRewardAction` to get required values:
 
 **Note:** Promotions do not apply to time-boosted milestones.
 
-<div style={{ clear: 'both' }} />
-
 ---
 
 **Step 5. Cashback**
-
-<img
-src="/img/playtime-studio/integration/cashback.png"
-alt="Cashback Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 Use `PlaytimeCashbackConfig`:
 
@@ -168,17 +121,9 @@ Use `PlaytimeCashbackConfig`:
   when available and refresh installed campaigns so processing rewards can move to completed.
 - If missing from the model, ensure Cashback is enabled for your app in the Monetize Dashboard.
 
-<div style={{ clear: 'both' }} />
-
 ---
 
 **Step 6. Pending Install Flow**
-
-<img
-src="/img/playtime-studio/integration/pending-install-flow.png"
-alt="Install Flow Example"
-style={{ float: 'right', width: '280px', marginLeft: '24px', marginBottom: '16px' }}
-/>
 
 The SDK handles pending install tracking automatically. After `openInStore(campaign)` is called:
 
@@ -196,5 +141,3 @@ Use `campaign.status` to drive your UI:
 
 In React Native, compare `campaign.status` with `PlaytimeCampaignStatus.PENDING`, `.INSTALLED`,
 and `.FAILED` rather than lowercase strings.
-
-<div style={{ clear: 'both' }} />

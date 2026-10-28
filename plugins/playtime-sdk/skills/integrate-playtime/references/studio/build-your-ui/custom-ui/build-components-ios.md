@@ -1,0 +1,299 @@
+# Build the Components
+
+> Use these SwiftUI recipes after fetching campaigns with the
+> [Advanced Custom UI SDK guide](use-sdk-ios.md). They map [SDK Models](../sdk-models.md) to focused
+> components. Keep SDK calls outside visual components and pass the original `PlaytimeCampaign`
+> back to impression, store, and installed-campaign actions.
+
+> **Important: Treat the SDK response as the source of truth**
+>
+> These recipes are starter layouts. Use any available icon, image, or video, provide a fallback,
+> and adapt the UI to the publisher's design system. See
+> [SDK Models](https://test-docs.adjoe.zone/rewarded-solutions/sdks/studio/build-your-ui/studio/build-your-ui/sdk-models) for all fields.
+>
+> Render every supported reward type returned by the SDK. Because `totalCoinsPossible` includes
+> those rewards, show how the user earns the displayed total. Hide a reward component only when its
+> response data is absent or empty, and do not recalculate SDK reward values.
+
+```swift
+import PlaytimeSDK
+import SwiftUI
+```
+
+## New Offers
+
+**Models and fields:** `PlaytimeCampaign.appName`, `iconImage`, `eventConfig`, and
+`PlaytimeEventConfig.totalCoinsPossible`.
+
+```swift
+struct NewOfferCard: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        VStack {
+            AsyncImage(url: campaign.iconImage.flatMap(URL.init(string:))) { image in
+                image.resizable().scaledToFit()
+            } placeholder: { Color.secondary.opacity(0.1) }
+            .frame(width: 64, height: 64)
+            Text(campaign.appName)
+            if let coins = campaign.eventConfig?.totalCoinsPossible {
+                Text("Earn up to \(coins) coins")
+            }
+        }
+    }
+}
+```
+
+Preserve SDK order and report a `.default` impression when the whole card is visible.
+
+## Installed Offers
+
+**Models and fields:** `PlaytimeCampaign.status`, `isCompleted`,
+`PlaytimeEventConfig.totalCoinsCollected`, and `totalCoinsPossible`.
+
+```swift
+struct InstalledOfferCard: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        let collected = campaign.eventConfig?.totalCoinsCollected ?? 0
+        let possible = campaign.eventConfig?.totalCoinsPossible
+
+        VStack(alignment: .leading) {
+            Text(campaign.appName).font(.headline)
+            Text("\(collected) coins collected")
+            if let possible, possible > 0 {
+                ProgressView(value: Double(collected), total: Double(possible))
+            }
+            if campaign.isCompleted { Text("All rewards completed") }
+            if campaign.status == .installed { Text("Ready to play") }
+        }
+    }
+}
+```
+
+Installation status and reward completion are independent. Add interactions using the methods
+described in [Use the SDK](use-sdk-ios.md).
+
+## Promotions
+
+**Models and fields:** `PlaytimeCampaign.promotion`, `PlaytimePromotion.boostFactor`, `targetingType`,
+`PlaytimeEventConfig.totalCoinsPossible`, and `totalOriginalCoinsPossible`.
+
+```swift
+struct PromotionTotal: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        if let promotion = campaign.promotion,
+           let current = campaign.eventConfig?.totalCoinsPossible {
+            let label = switch promotion.targetingType {
+            case "AdvertiserLevel": "Advertiser promotion"
+            case "UserLevel": "Special promotion"
+            case "AllUsers": "Promotion"
+            default: promotion.name ?? "Reward boost"
+            }
+
+            HStack {
+                Text(label)
+                if let original = campaign.eventConfig?.totalOriginalCoinsPossible,
+                   original < current {
+                    Text("\(original)").strikethrough()
+                }
+                Text("\(current) coins")
+                if let factor = promotion.boostFactor { Text("\(factor, specifier: "%.1f")×") }
+            }
+        }
+    }
+}
+```
+
+Check `targetingType` in the SDK response to identify the applied promotion and drive the UI. Use a
+generic fallback for unknown values. Current values already include the promotion; do not multiply
+them by `boostFactor`. See [User Level Promos](https://test-docs.adjoe.zone/rewarded-solutions/sdks/resources/user-level-promos) for
+`promotionTag` setup and [Advertiser-Level Promotions](../offer-api.md#advertiser-level-promotions-alp)
+for additional ALP guidance.
+
+## Event-Based Rewards
+
+**Models and fields:** `PlaytimeEventConfig.sequentialActions` and
+`PlaytimeRewardAction.name`, `taskDescription`, `amount`, `originalCoins`, and `rewardedAt`.
+
+```swift
+struct SequentialRewards: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        ForEach(Array((campaign.eventConfig?.sequentialActions ?? []).enumerated()), id: \.offset) {
+            index, action in
+            HStack {
+                Text(action.rewardedAt == nil ? "\(index + 1)" : "✓")
+                VStack(alignment: .leading) {
+                    Text(action.name ?? "Milestone \(index + 1)")
+                    if let description = action.taskDescription { Text(description) }
+                }
+                Spacer()
+                Text("\(action.amount) coins")
+            }
+        }
+    }
+}
+```
+
+Present sequential actions in SDK order.
+
+## Time-Based Rewards
+
+> **Warning: Android only**
+>
+> Time-based rewards and `timeBasedActions` are not supported on iOS. Do not build iOS UI that
+> depends on them.
+
+## Bonus Rewards
+
+**Models and fields:** `PlaytimeEventConfig.bonusActions` and
+`PlaytimeRewardAction.name`, `taskDescription`, `amount`, and `rewardedAt`.
+
+```swift
+struct BonusRewards: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        let actions = campaign.eventConfig?.bonusActions ?? []
+        if !actions.isEmpty {
+            VStack(alignment: .leading) {
+                Text("Bonus rewards").font(.headline)
+                ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
+                    HStack {
+                        Text(action.name ?? "Bonus reward")
+                        Spacer()
+                        Text("\(action.amount) coins")
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+Hide empty bonus sections and keep them separate from sequential progression.
+
+## Repeatable Rewards
+
+**Models and fields:** `PlaytimeRewardAction.rewardsCount`, `completedRewards`, and `amount`.
+
+```swift
+struct RepeatableProgress: View {
+    let action: PlaytimeRewardAction
+
+    var body: some View {
+        if let target = action.rewardsCount, target > 1 {
+            let completed = min(max(action.completedRewards ?? 0, 0), target)
+            VStack(alignment: .leading) {
+                Text("\(completed) of \(target) completed")
+                ProgressView(value: Double(completed), total: Double(target))
+                Text("\(action.amount) coins per completion")
+            }
+        }
+    }
+}
+```
+
+Repeatability is a capability of sequential or bonus actions.
+
+## Cashback
+
+**Models and fields:** `PlaytimeEventConfig.cashbackReward`,
+`PlaytimeCashbackConfig.exchangeRate`, `maxLimitPerCampaignCoins`, `pendingRewards`, and
+`completedRewards`; `PlaytimeCashbackReward.events`; `PlaytimeCashbackRewardEvent.coins`,
+`receivedAt`, and `processAt`.
+
+```swift
+struct CashbackSection: View {
+    let campaign: PlaytimeCampaign
+
+    var body: some View {
+        if let cashback = campaign.eventConfig?.cashbackReward {
+            VStack(alignment: .leading) {
+                Text("Cashback").font(.headline)
+                if let description = cashback.cashbackDescription { Text(description) }
+                if let rate = cashback.exchangeRate { Text("Earn \(rate) coins per USD") }
+                CashbackGroup(label: "Processing", reward: cashback.pendingRewards, isPending: true)
+                CashbackGroup(label: "Completed", reward: cashback.completedRewards)
+            }
+        }
+    }
+}
+
+struct CashbackGroup: View {
+    let label: String
+    let reward: PlaytimeCashbackReward?
+    var isPending = false
+
+    var body: some View {
+        if let reward, !reward.events.isEmpty {
+            VStack(alignment: .leading) {
+                Text("\(label): \(reward.totalCoins ?? 0) coins")
+                ForEach(Array(reward.events.enumerated()), id: \.offset) { _, event in
+                    Text("\(event.coins ?? 0) coins\(isPending ? " — processing" : "")")
+                    if isPending, let processAt = event.processAt {
+                        Text("Expected processing: \(processAt)")
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+Cashback attribution can be delayed. Show `pendingRewards` as processing and keep it separate from
+`completedRewards`; never present pending coins as collected. `receivedAt` indicates when an event
+was received and `processAt` indicates its processing time. Refresh installed campaigns so the UI
+can move rewards from processing to completed. Hide cashback only when its model is absent.
+Promotions do not apply to cashback.
+
+## Time-Boosted Rewards
+
+**Models and fields:** `PlaytimeRewardAction.timedCoins`, `originalCoins`,
+`timedCoinsDuration`, and `boosterExpiresAt`.
+
+```swift
+struct TimeBoost: View {
+    let action: PlaytimeRewardAction
+
+    var body: some View {
+        if let boosted = action.timedCoins, boosted > 0 {
+            VStack(alignment: .leading) {
+                Text("Limited-time boost")
+                Text("\(boosted) coins")
+                if let minutes = action.timedCoinsDuration {
+                    Text("Complete within \(minutes) minutes")
+                }
+                if let deadline = action.boosterExpiresAt { Text("Boost expires: \(deadline)") }
+            }
+        }
+    }
+}
+```
+
+Prefer `boosterExpiresAt` for installed campaigns. Promotions do not apply to timed values.
+
+## Pending Installs
+
+**Models and fields:** `PlaytimeCampaign.status` and `PlaytimeCampaignStatus`.
+
+```swift
+@ViewBuilder
+func installationStatus(for campaign: PlaytimeCampaign) -> some View {
+    switch campaign.status {
+    case .pending: Label("Verifying installation…", systemImage: "clock")
+    case .installed: Text("Installed — keep playing")
+    case .failed: Text("Not eligible for rewards").foregroundStyle(.red)
+    case .available: Text("Available to install")
+    @unknown default: EmptyView()
+    }
+}
+```
+
+Pending campaigns come from `getInstalledCampaigns`. Refresh on foreground or pull-to-refresh;
+do not poll continuously.
